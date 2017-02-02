@@ -1,0 +1,178 @@
+' Gambas module file
+
+' Solanum
+' Gestion de cultivos
+'
+' Copyright (C) Martín Belmonte
+'
+' This program is free software; you can redistribute it and/or modify
+' it under the terms of the GNU General Public License as published by
+' the Free Software Foundation; either version 2 of the License, or
+' (at your option) any later version.
+'
+' This program is distributed in the hope that it will be useful,
+' but WITHOUT ANY WARRANTY; without even the implied warranty of
+' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+' GNU General Public License for more details.
+'
+' You should have received a copy of the GNU General Public License
+' along with this program; if not, write to the Free Software
+' Foundation, Inc., 51 Franklin St, Fifth Floor,
+' Boston, MA  02110-1301  USA
+'
+
+Public stxProgram As New String[] ''<ul><li>0 Database Engine</li><li>1 Database Host</li><li>2 Database Name</li><li>3 Database Path</li><li>4 Language input 2 leters</li><li>5 Language input 3 leters</li><li>6 Language input english</li><li>7 Language input dictionary </li><li>8 Language output 2 leters</li><li>9 Language output 3 leters</li><li>10 Language output english</li><li>11 Language output dictionary </li><li>12 Dimensiones de la ventana del programa </li><li>13 Reserva</li><li>14 Ancho de controles por defecto</li><li>15 Reserva</li><li>16 Show-Filter-Bar [yes,no]</li><li>17 Show-Order-Bar [yes,no]</li><li>18 Mensajes centralizados]</li></ul>
+
+Public stxDBEngines As New String[] ' Motores de bases de datos soportadas por gambas
+Public conProgram As New Connection ' Conexión a la base de datos
+
+Public stxTables As New String[] ' Lista de tablas
+Public stxTableFields As New String[][] 'Lista de campos de las tablas
+
+Public stxViews As New String[] ' Lista de vistas
+Public stxViewFields As New String[][] 'Lista de campos de las vistas
+
+Public stxTitles As New String[][] 'Lista de títulos de los campos de las vistas y de las tablas
+
+Public stxLanguage As New String[][] '' <ul><li>0 Acronimo de dos letras "es"</li><li>1 Acronimo de tres letras "spa"</li><li>2 Nombre en inglés "Spanish"</li><li>3 Nombre nativo "Español"</li><li>4 Grupo del idioma "Indo-European"</li><li>5 Alfabeto "Latn" (latino)</li><li>6 Traducir [True/False]</li></ul>
+
+Public stxFieldsTableCurrentrent As New String[] ' lista de campos para crear los botones de filtros
+Public stxFieldsViewCurrentrent As New String[] ' lista de campos para crear los botones de filtros
+
+Public resProgram As Result ' ok ///////
+
+Public Sub Main()
+
+  Dim stxPackages As New String[]
+  Dim strAppPath As String
+  Dim strSQL As String
+  Dim resSQL As Result
+  Dim intTable As Integer
+  Dim strTableTmp As String
+  Dim strDBName As String
+  Dim stxTmp As New Variant[][]
+  Dim intTmp As Integer
+  Dim intP As Integer
+  Dim intLine As Integer
+  Dim strP0 As String
+
+  strAppPath = User.Home &/ "." & Application.Name
+  stxDBEngines = MUtility.FileLoad("engines.txt") ' Motores de bases de datos soportados por gambas
+
+  ' Existencia de directorio de la aplicacion en el directorio home. Esto se ejecutara una unica vez.
+  ' Aqui se pueden agregar mas comprobaciones de este tipo para copia de archivos de configuracion y demas cosas similares
+  If Exist(strAppPath) = False Then
+    Mkdir strAppPath
+  Endif
+  Wait 0.05
+  If Exist(strAppPath &/ "plants") = False Then
+    Mkdir strAppPath &/ "plants"
+  Endif
+
+  ' Estado de las dependencias.//////////////////////////////////////////////////////
+  stxPackages = MUtility.FileLoad("depend.txt")
+  If stxPackages.Count > 0 Then
+    Msys.PkgDep(stxPackages)
+  Endif
+
+  ' Carga de los parametros del prgrama 1º pasada gb.settings./////////////////////////
+  strDBName = Replace(Application.Name & ".sqlite", "-", "")
+  stxProgram = ["", "", "", "", "", "", "", "", "", ""]
+
+  stxProgram[0] = Settings["Program/Database-Engine", "sqlite3"]
+  stxProgram[1] = Settings["Program/Database-Host", strAppPath]
+  stxProgram[2] = Settings["Program/Database-Name", strDBName]
+  stxProgram[3] = Settings["Program/Database-Path", strAppPath &/ strDBName]
+  stxProgram[4] = Settings["Program/Plot-Current", ""]
+  stxProgram[5] = ""
+  stxProgram[6] = ""
+  stxProgram[7] = ""
+  stxProgram[8] = Settings["Program/Show-Filter-Bar", "no"]
+  stxProgram[9] = Settings["Program/Show-Order-Bar", "no"]
+
+  ' Existencia de la base de datos.///////////////////////////////////////////////
+  conProgram = MData.DBSqlite(stxProgram, "empty") ' Si no existe se crea una vacia
+  conProgram.Name = stxProgram[2]
+  conProgram.Open
+
+  ' Comprobación de la existencia de las tablas y sus campos.
+  Structure()
+
+  ' Desde donde se esta ejecutando la aplicación
+  Select MUtility.WhereRun()
+    Case 0
+      stxProgram[9] = "gambas"
+    Case 1
+      stxProgram[9] = "ide"
+  End Select
+
+  ' Apertura del formulario principal
+  If conProgram.Opened Then
+    FMain.Show()
+  Else
+    Message.Warning(("No se pudo abrir la conexión a la base de datos"))
+  Endif
+
+End
+
+Public Function Structure() '' Verifica y crea la estructura de la base de datos usando la informacion minima del archivo entities.txt.
+
+  Dim strTables As String
+  Dim strY As String
+  Dim strX As String
+  Dim int As Integer
+  Dim tbl As Table
+  Dim fld As Field
+  Dim stxTmp As New String[]
+  Dim stxFields As New String[][]
+  Dim strTyp As String[]
+  Dim strFld As String[]
+  Dim strTbl As String
+
+  If Exist("entities.txt") = True Then
+    strTables = File.Load("entities.txt")
+    stxFields.Clear
+    For Each strY In Split(strTables, "\n")
+      stxTmp.Clear
+      If strY <> "" Then
+        strTbl = Split(strY, ",")[0]
+        If MStarter.conProgram.Tables.Exist(strtbl) = False Then
+          stxTmp.Add(strTbl)
+
+          For int = 1 To Split(strY, ",").Max
+            stxTmp.Add(Split(strY, ",")[int])
+          Next
+
+          If MData.TableMake1(MStarter.conProgram, stxTmp) = 1 Then
+            Message("Tabla creada con exito")
+          Endif
+
+        Endif
+      Endif
+    Next
+  Endif
+
+End
+
+Public Function Terminator() As Integer ''Funcion que guarda las configuraciones que se modificaron en el programa antes de cerrarlo.
+
+  Dim int As Integer
+  Dim strLang As String
+  Dim strValue As String
+
+  Settings["Program/Database-Engine"] = stxProgram[0]
+  Settings["Program/Database-Host"] = stxProgram[1]
+  Settings["Program/Database-Name"] = stxProgram[2]
+  Settings["Program/Database-Path"] = stxProgram[3]
+  Settings["Program/Plot-Current"] = stxProgram[4]
+  Settings["Program/Spare5"] = stxProgram[5]
+  Settings["Program/Spare6"] = stxProgram[6]
+  Settings["Program/Spare7"] = stxProgram[7]
+  Settings["Program/Show-Filter-Bar"] = stxProgram[8]
+  Settings["Program/Show-Order-Bar"] = stxProgram[9]
+
+  Settings.Save
+
+  Return 1
+
+End

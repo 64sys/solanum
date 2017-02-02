@@ -1,0 +1,216 @@
+# Gambas Form File 3.0
+
+{ Form Form
+  MoveScaled(0,0,77,65)
+  Icon = Picture["logo.png"]
+  Arrangement = Arrange.Vertical
+  { mnuFile Menu
+    Text = ("Archivo")
+    { mnuOpen Menu
+      Text = ("Abrir parcela")
+      Picture = Picture["icon:/16/open"]
+    }
+    { mnuNew Menu
+      Text = ("Crear parcela")
+      Picture = Picture["icon:/16/new"]
+    }
+    { mnuPlot Menu
+      Text = ("Modificar parcela")
+      Picture = Picture["icon:/16/properties"]
+    }
+    { nmuImport Menu
+      Text = ("Importar parcela")
+      Picture = Picture["icon:/16/unindent"]
+    }
+    { nmuExport Menu
+      Text = ("Exportar parcela")
+      Picture = Picture["icon:/16/indent"]
+    }
+    { mnuReset Menu
+      Text = ("Restablecer desde cero")
+      Picture = Picture["icon:/16/remove"]
+    }
+    { mnuBackup Menu
+      Text = ("Respaldar")
+      Picture = Picture["icon:/16/archive"]
+    }
+    { mnuRestore Menu
+      Text = ("Restaurar")
+      Picture = Picture["icon:/16/package"]
+    }
+    { mnuQuit Menu
+      Text = ("Salir")
+      Picture = Picture["icon:/16/quit"]
+      Shortcut = "Alt+F4"
+    }
+  }
+  { Menu1 Menu
+    Text = ("Acciones")
+    { mnuEmail Menu
+      Text = ("Eviar un correo electrónico")
+      Picture = Picture["icon:/16/mail"]
+    }
+    { nmuReportSeedling Menu
+      Text = ("Recuento de plantines")
+      Picture = Picture["icon:/16/print"]
+    }
+    { Menu2 Menu
+      Text = ("Recuento de materiales")
+      Picture = Picture["icon:/16/print"]
+    }
+  }
+  { mnuConfiguration Menu
+    Text = ("Configuración")
+    { mnuPreferences Menu
+      Text = ("Preferencias")
+      Picture = Picture["icon:/16/tools"]
+    }
+    { nmuShowOrders Menu
+      Text = ("Orden")
+      Picture = Picture["icon:/16/sort-ascent"]
+    }
+    { nmuShowFilters Menu
+      Text = ("Filtro")
+      Picture = Picture["icon:/16/filter"]
+    }
+  }
+  { mnuInfo Menu
+    Text = ("Información")
+    { mnuAbout Menu
+      Text = ("Acerca de")
+      Picture = Picture["icon:/16/info"]
+    }
+    { mnuHelp Menu
+      Text = ("Ayuda")
+      Picture = Picture["icon:/16/help"]
+    }
+  }
+  { Panel8 Panel
+    MoveScaled(0,1,76,5)
+    Arrangement = Arrange.Horizontal
+    { tobOpen ToolButton
+      MoveScaled(0,0,5,5)
+      ToolTip = ("Leer las frases a traducir y presentar un estado de la situacion")
+      Picture = Picture["icon:/22/open"]
+    }
+    { tobNew ToolButton
+      MoveScaled(6,0,5,5)
+      ToolTip = ("Leer las frases a traducir y presentar un estado de la situacion")
+      Picture = Picture["icon:/22/new"]
+    }
+    { tobPlot ToolButton
+      MoveScaled(12,0,5,5)
+      ToolTip = ("Leer las frases a traducir y presentar un estado de la situacion")
+      Picture = Picture["icon:/22/properties"]
+    }
+    { tobEmail ToolButton
+      MoveScaled(18,0,5,5)
+      ToolTip = ("Eviar un correo electrónico")
+      Picture = Picture["icon:/22/mail"]
+    }
+    { tobReport ToolButton
+      MoveScaled(23,0,5,5)
+      ToolTip = ("Imprimir la lista de contactos")
+      Picture = Picture["icon:/22/print"]
+    }
+    { tobPreferences ToolButton
+      MoveScaled(29,0,5,5)
+      ToolTip = ("Preferencias")
+      Picture = Picture["icon:/22/tools"]
+    }
+    { tobAbout ToolButton
+      MoveScaled(34,0,5,5)
+      ToolTip = ("Acerca de")
+      Picture = Picture["icon:/22/info"]
+    }
+    { tobHelp ToolButton
+      MoveScaled(39,0,5,5)
+      ToolTip = ("Acerca de")
+      Picture = Picture["icon:/22/question"]
+    }
+    { Panel1 Panel
+      MoveScaled(64,1,5,3)
+      Expand = True
+    }
+    { tobQuit ToolButton
+      MoveScaled(70,0,5,5)
+      ToolTip = ("Leer las frases a traducir y presentar un estado de la situacion")
+      Picture = Picture["icon:/22/quit"]
+    }
+  }
+  { HSplit1 HSplit
+    MoveScaled(0,7,76,48)
+    Expand = True
+    Border = False
+    { trvEntities TreeView
+      MoveScaled(7,8,16,16)
+      Border = False
+    }
+    { Panel4 Panel
+      MoveScaled(25,1,51,46)
+      Expand = True
+      Arrangement = Arrange.Vertical
+      { pnlDataOrder ScrollView
+        MoveScaled(0,2,41,4)
+        Background = Color.TextBackground
+        Arrangement = Arrange.Horizontal
+        Padding = 1
+        Border = False
+        ScrollBar = Scroll.None
+      }
+      { pnlDataFilter ScrollView
+        MoveScaled(0,7,41,4)
+        Background = Color.TextBackground
+        Arrangement = Arrange.Horizontal
+        Padding = 1
+        Border = False
+        ScrollBar = Scroll.None
+      }
+      { Panel3 Panel
+        MoveScaled(0,12,41,14)
+        Expand = True
+        Arrangement = Arrange.Fill
+        { grwData GridView
+          MoveScaled(1,1,38,12)
+          Expand = True
+          Border = False
+          Mode = Select.Multiple
+        }
+      }
+      { pnlDataControls Panel
+        MoveScaled(0,27,41,4)
+        Background = Color.TextBackground
+        Arrangement = Arrange.Horizontal
+        { tobNewRecord ToolButton
+          MoveScaled(0,0,4,4)
+          ToolTip = ("Agregar")
+          Picture = Picture["icon:/16/new"]
+        }
+        { tobSaveRecord ToolButton
+          MoveScaled(4,0,4,4)
+          ToolTip = ("Guardar")
+          Picture = Picture["icon:/16/save"]
+        }
+        { tobDeleteRecord ToolButton
+          MoveScaled(9,0,4,4)
+          ToolTip = ("Borrar")
+          Picture = Picture["icon:/16/delete"]
+        }
+        { tobEditRecord ToolButton
+          MoveScaled(15,0,4,4)
+          ToolTip = ("Editar")
+          Picture = Picture["icon:/16/edit"]
+        }
+      }
+    }
+  }
+  { Panel2 Panel
+    MoveScaled(0,56,76,5)
+    Arrangement = Arrange.Horizontal
+    Padding = 5
+    { lblInformation Label
+      MoveScaled(8,1,24,4)
+      Expand = True
+    }
+  }
+}

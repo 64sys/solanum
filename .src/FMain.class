@@ -1,0 +1,192 @@
+' Gambas class file
+
+'
+' Solanum
+' Gestion de cultivos
+'
+' Copyright (C) Martín Belmonte
+'
+' This program is free software; you can redistribute it and/or modify
+' it under the terms of the GNU General Public License as published by
+' the Free Software Foundation; either version 2 of the License, or
+' (at your option) any later version.
+'
+' This program is distributed in the hope that it will be useful,
+' but WITHOUT ANY WARRANTY; without even the implied warranty of
+' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+' GNU General Public License for more details.
+'
+' You should have received a copy of the GNU General Public License
+' along with this program; if not, write to the Free Software
+' Foundation, Inc., 51 Franklin St, Fifth Floor,
+' Boston, MA  02110-1301  USA
+'
+
+Public Sub Form_Open()
+
+  HSplit1.Layout = [1, 5]
+  LoadTreeView()
+  LoadFilterAndOrder()
+
+End
+
+' ///// Menu //////////////////////////////////////////////////////
+Public Sub mnuOpen_Click()
+
+End
+
+Public Sub mnuNew_Click()
+
+  cmdPlot()
+
+End
+
+Public Sub mnuQuit_Click()
+
+  Me.Close
+
+End
+
+Public Sub mnuProperties_Click()
+
+End
+
+Public Sub mnuPreferences_Click()
+
+End
+
+Public Sub mnuAbout_Click()
+
+  FAbout.Show()
+
+End
+
+Public Sub mnuHelp_Click()
+
+End
+
+' ///// Botones //////////////////////////////////////////////////////
+Public Sub tobOpen_Click()
+
+End
+
+Public Sub tobNew_Click()
+
+  cmdPlot()
+
+End
+
+Public Sub tobPlot_Click()
+
+End
+
+Public Sub tobPreferences_Click()
+
+  FConfig.Show()
+
+End
+
+Public Sub tobAbout_Click()
+
+  FAbout.Show()
+
+End
+
+Public Sub tobHelp_Click()
+
+End
+
+Public Sub tobQuit_Click()
+
+  Me.Close
+
+End
+
+' ///// Ordenes //////////////////////////////////////////////////////
+
+Public Sub cmdOpen()
+
+  ' etste tendria que abrir un selector de una lista de los proyectos que existen
+
+End
+
+Public Sub cmdPlot(Optional intPlot As Integer) '' Abre el formularo de edicion de registros de la base de datos para la tabla "plots" parcelas, ya que pueden gestionarse varias parcelas o la misma parcela pero diferente ciclo (año).
+
+  If intPlot = Null Then ' Se creara una nueva parcela
+    FData.RunEditor(MStarter.conProgram, "plots")
+  Else
+    FData.RunEditor(MStarter.conProgram, "plots", intPlot)
+  Endif
+
+End
+
+'//// Ajustes visuales del menu //////////////////////////////////////////
+
+Public Sub LoadFilterAndOrder()
+
+  nmuShowFilters.Value = MStarter.stxProgram[8]
+
+  Select MStarter.stxProgram[8]
+    Case "yes"
+      pnlDataFilter.Visible = True
+      nmuShowFilters.Checked = True
+      nmuShowFilters.Text = ("Ocultar la barra de filtro")
+    Case "no"
+      pnlDataFilter.Visible = False
+      nmuShowFilters.Checked = False
+      nmuShowFilters.Text = ("Mostrar la barra de filtro")
+  End Select
+
+  nmuShowOrders.Value = MStarter.stxProgram[9]
+
+  Select MStarter.stxProgram[9]
+    Case "yes"
+      pnlDataOrder.Visible = True
+      nmuShowOrders.Checked = True
+      nmuShowOrders.Text = ("Ocultar la barra de orden")
+    Case "no"
+      pnlDataOrder.Visible = False
+      nmuShowOrders.Checked = False
+      nmuShowOrders.Text = ("Mostrar la barra de orden")
+
+  End Select
+
+End
+
+' ///// Tree //////////////////////////////////////////////////////
+
+Public Sub LoadTreeView()
+
+  Dim intTree As Integer
+  Dim strText As String
+  Dim strKey As String
+  Dim picTab As Picture
+
+  If MStarter.stxViewsEx.Count > 0 Then
+
+    trvEntities.Add(MStarter.conProgram.Name, Application.Name, Picture["icon:/16/server"])
+    For intTree = 0 To MStarter.stxViewsEx.Max
+      strKey = MStarter.stxViewsEx[intTree][0]
+      strText = MStarter.stxViewsEx[intTree][1]
+      picTab = Picture[MStarter.stxViewsEx[intTree][2]]
+      trvEntities.Add(strKey, strText, picTab, MStarter.conProgram.Name)
+    Next
+  Endif
+
+End
+
+' ///// Grid //////////////////////////////////////////////////////
+
+Public Sub grwData_Data(Row As Integer, Column As Integer)
+
+  If MStarter.resProgram.Available Then
+
+    MStarter.resProgram.MoveTo(Row)
+
+    grwData.Data.Text = MStarter.resProgram[MStarter.resProgram.Fields[Column].Name]
+
+  Else
+    grwData.Data.Text = ""
+  Endif
+
+End

@@ -1,0 +1,171 @@
+' Gambas class file
+
+'
+' Solanum
+' Gestion de cultivos
+'
+' Copyright (C) Martín Belmonte
+'
+' This program is free software; you can redistribute it and/or modify
+' it under the terms of the GNU General Public License as published by
+' the Free Software Foundation; either version 2 of the License, or
+' (at your option) any later version.
+'
+' This program is distributed in the hope that it will be useful,
+' but WITHOUT ANY WARRANTY; without even the implied warranty of
+' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+' GNU General Public License for more details.
+'
+' You should have received a copy of the GNU General Public License
+' along with this program; if not, write to the Free Software
+' Foundation, Inc., 51 Franklin St, Fifth Floor,
+' Boston, MA  02110-1301  USA
+'
+
+Public Sub Form_Open()
+
+  MakeControls()
+
+End
+
+Public Sub btnOK_Click()
+
+  WriteConfig()
+  'Me.Close(True)
+  Me.Close
+
+End
+
+Public Sub btnCancel_Click()
+
+  Me.Close
+
+End
+
+Public Function MakeControls() As Integer '' Esta funcion crea los controles para editar la configuración del programa
+
+  Dim intState As Integer
+  Dim pnl As Panel
+  Dim txo As TextBox
+  Dim lbl As Label
+  Dim cmo As ComboBox
+  Dim intCfg As Integer
+  Dim intWidt As Integer
+  Dim stxParam As New String[][]
+  Dim stxTmp As New String[]
+  Dim intM As Integer
+
+  intState = 0
+
+  pnlConfig.Children.Clear
+  pnlConfig.Arrangement = 3
+  pnlConfig.Padding = 4
+
+  stxParam.Add(["0", ("Motor de la base de datos"), "cmo", "postgresql:mysql:sqlite:odbc", MStarter.stxProgram[0]])
+  stxParam.Add(["1", ("Ubicación de la base de datos"), "txo", "", MStarter.stxProgram[1]])
+  stxParam.Add(["2", ("Nombre de la base de datos"), "txo", "", MStarter.stxProgram[2]])
+  stxParam.Add(["3", ("Ruta de la base de datos"), "txo", "", MStarter.stxProgram[3]])
+
+  stxParam.Add(["4", ("Tamaño de la ventana"), "cmo", "small:medium:full", MStarter.stxProgram[4]])
+
+  stxParam.Add(["5", ("Directorio de exportación"), "txo", "", MStarter.stxProgram[5]])
+
+  stxParam.Add(["6", ("Caracter seperador para exportación"), "cmo", "TAB:,:;", MStarter.stxProgram[6]])
+
+  For intCfg = 0 To stxParam.Max
+
+    intWidt = 6 * String.Len(stxParam[intCfg][1]) + 14
+
+    pnl = New Panel(pnlConfig)
+    pnl.Name = "pnl-" & CStr(intCfg)
+    pnl.Width = intWidt
+    pnl.Height = 58
+    pnl.Arrangement = 2
+    pnl.Border = 1
+
+    lbl = New Label(pnl)
+    lbl.Name = "lbl-" & CStr(intCfg)
+    lbl.Text = stxParam[intCfg][1]
+    lbl.Width = intWidt
+    lbl.Height = 28
+
+    Select stxParam[intCfg][2]
+      Case "txo"
+        txo = New TextBox(pnl) As "Box"
+        txo.Name = "txo-" & CStr(intCfg)
+        txo.Tag = intCfg
+        txo.Text = stxParam[intCfg][4]
+        txo.Width = intWidt
+        txo.Height = 28
+        txo.Border = False
+
+      Case "cmo"
+        cmo = New ComboBox(pnl) As "Box"
+        cmo.Name = "cmo-" & CStr(intCfg)
+        cmo.Tag = intCfg
+        cmo.Width = intWidt + 14
+        cmo.Height = 28
+        cmo.ReadOnly = True
+        cmo.Border = False
+
+        stxTmp = Split(stxParam[intCfg][3], ":")
+        For intM = 0 To stxTmp.Max
+
+          cmo.Add(stxTmp[intM])
+        Next
+
+        If stxTmp.Find(stxParam[intCfg][4]) > -1 Then
+          cmo.Text = stxParam[intCfg][4]
+
+        Endif
+
+    End Select
+
+  Next
+
+  intState = 1
+
+  Return intState
+
+End
+
+Public Sub Box_Change()
+
+  Dim obj As Object
+  Dim intW As Integer
+
+  obj = Last
+
+  intW = String.Len(obj.Text) * 6 + 7
+
+  If obj.parent.Width < intW Then
+    obj.parent.Width = String.Len(obj.Text) * 6 + 7
+  Endif
+
+End
+
+Public Function WriteConfig() As Integer
+
+  Dim objp As Object
+  Dim objx As Object
+  Dim stxFields As New String[]
+  Dim stxValues As New String[]
+  Dim intState As Integer
+
+  stxFields.Clear
+
+  For Each objp In pnlConfig.Children
+    If Object.Type(objp) = "Panel" Then
+      For Each objx In objp.Children
+        Select Object.Type(objx)
+          Case "TextBox", "ComboBox"
+            stxValues.Add(objx.Tag & ":" & objx.Text)
+        End Select
+
+      Next
+    Endif
+  Next
+
+  Return intState
+
+End

@@ -1,0 +1,220 @@
+' Gambas class file
+
+'
+' Solanum
+' Gestion de cultivos
+'
+' Copyright (C) Martín Belmonte
+'
+' This program is free software; you can redistribute it and/or modify
+' it under the terms of the GNU General Public License as published by
+' the Free Software Foundation; either version 2 of the License, or
+' (at your option) any later version.
+'
+' This program is distributed in the hope that it will be useful,
+' but WITHOUT ANY WARRANTY; without even the implied warranty of
+' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+' GNU General Public License for more details.
+'
+' You should have received a copy of the GNU General Public License
+' along with this program; if not, write to the Free Software
+' Foundation, Inc., 51 Franklin St, Fifth Floor,
+' Boston, MA  02110-1301  USA
+'
+
+Public conData As Connection
+Public strTab As String
+Public intKeyCurrent As Integer
+
+Public Sub RunEditor(con As Connection, strTable As String, Optional intKey As Integer) ' As Boolean
+
+  conData = con
+  strTab = strTable
+  If intKey Then
+    intKeyCurrent = intKey
+  Endif
+
+  If InStr(strTable, "view_") > 0 Then
+    strTable = Replace(strTable, "view_", "")
+  Endif
+
+  If MakeControls(strTable, intKey) = 1 Then
+    Me.Tag = intKey
+    Me.ShowModal()
+  Endif
+
+End
+
+Public Sub btnOK_Click()
+
+  Dim objp As Object
+  Dim objx As Object
+  Dim stxFields As New String[]
+  Dim stxValues As New String[]
+
+  stxFields.Clear
+
+  For Each objp In pnlData.Children
+    If Object.Type(objp) = "Panel" Then
+      For Each objx In objp.Children
+        Select Object.Type(objx)
+          Case "TextBox", "ComboBox"
+            stxValues.Add(objx.Tag & "\t" & objx.Text)
+        End Select
+
+      Next
+    Endif
+  Next
+
+  If intKeyCurrent Then ' Editando registro existente
+    MData.RecordWrite(conData, strTab, MStarter.stxTableFields, stxValues)
+  Else ' Nuevo registro
+    MData.RecordNew(conData, strTab, MStarter.stxTableFields, stxValues)
+  Endif
+
+  FMain.UpdateGrid()
+
+  Me.Close
+
+End
+
+Public Sub btnCancel_Click()
+
+  Me.Close
+
+End
+
+Public Function MakeControls(strTable As String, Optional intKey As Integer) As Integer
+
+  Dim intState As Integer
+  Dim pnl As Panel
+  Dim txo As TextBox
+  Dim lbl As Label
+  Dim cmo As ComboBox
+  Dim strComboSql As String
+  Dim resCombo As Result
+  Dim resEdit As Result
+  Dim strSQLEdit As String
+  Dim intFld As Integer
+  Dim bolReadonly As Boolean
+  Dim intWidt As Integer
+
+  intState = 0
+
+  pnlData.Children.Clear
+  pnlData.Arrangement = 3
+
+  If intKey <> "" Then
+    ' Busqueda del campo primary key de la tabla
+    For intFld = 0 To MStarter.stxTableFields.Max
+      If MStarter.stxTableFields[intFld][0] = strTable Then
+        If MStarter.stxTableFields[intFld][5] = "YK" Then
+          strSQLEdit = "select * from " & MStarter.stxTableFields[intFld][0]
+          strSQLEdit &= " where " & MStarter.stxTableFields[intFld][1]
+          strSQLEdit &= "='" & CStr(intKey) & "'"
+
+          resEdit = conData.Exec(strSQLEdit)
+
+        Endif
+      Endif
+    Next
+
+    For intFld = 0 To MStarter.stxTableFields.Max
+      If MStarter.stxTableFields[intFld][0] = strTable Then
+        'If MStarter.stxTableFields[intFld][5] <> "YK" Then
+        Select MStarter.stxTableFields[intFld][5] ' Si el campo es Primary Key o no
+          Case "YK"
+            bolReadonly = True
+            intWidt = 60
+
+          Case "NK"
+            bolReadonly = False
+            intWidt = 120
+        End Select
+        '--------------------------------
+        pnl = New Panel(pnlData)
+        pnl.Name = "pnl-" & MStarter.stxTableFields[intFld][1] 'strFieldName
+        pnl.Width = intWidt
+        pnl.Height = 58
+        pnl.Arrangement = 2
+        pnl.Padding = 2
+
+        lbl = New Label(pnl)
+        lbl.Name = "lbl-" & MStarter.stxTableFields[intFld][1] 'strFieldName
+        lbl.Text = MStarter.stxTableFields[intFld][10] 'strFieldName
+        lbl.Width = intWidt
+        lbl.Height = 28
+
+        Select MStarter.stxTableFields[intFld][7]
+          Case ""
+            txo = New TextBox(pnl)
+            txo.Name = "txo-" & MStarter.stxTableFields[intFld][1] 'strFieldName
+            txo.Tag = MStarter.stxTableFields[intFld][1] 'strFieldName
+            txo.Width = intWidt
+            txo.Height = 28
+            txo.ReadOnly = bolReadonly
+
+            If resEdit.Available Then
+              txo.Text = resEdit[MStarter.stxTableFields[intFld][1]]
+            Endif
+
+          Case Else
+            strComboSql = "select " & MStarter.stxTableFields[intFld][8] & ", "
+            strComboSql &= MStarter.stxTableFields[intFld][9] & " from "
+            strComboSql &= MStarter.stxTableFields[intFld][7] & " order by " & MStarter.stxTableFields[intFld][9] & " asc"
+
+            resCombo = conData.Exec(strComboSql)
+
+            cmo = New ComboBox(pnl)
+            cmo.Name = "cmo-" & MStarter.stxTableFields[intFld][1]
+            cmo.Tag = MStarter.stxTableFields[intFld][1]
+            cmo.Width = pnl.Width
+            cmo.Height = 28
+            While resCombo.Available
+              cmo.Add(resCombo[MStarter.stxTableFields[intFld][9]])
+              If resEdit.Available Then
+                If resCombo[MStarter.stxTableFields[intFld][8]] = resEdit[MStarter.stxTableFields[intFld][1]] Then
+                  cmo.Text = resCombo[MStarter.stxTableFields[intFld][9]]
+                Endif
+              Endif
+              resCombo.MoveNext
+            Wend
+        End Select
+        '--------------------------------
+      Endif
+    Next
+  Endif
+
+  intState = 1
+
+  Return intState
+
+End
+
+Public Function WriteRecord() As Integer
+
+  Dim objp As Object
+  Dim objx As Object
+  Dim stxFields As New String[]
+  Dim stxValues As New String[]
+  Dim intState As Integer
+
+  stxFields.Clear
+
+  For Each objp In pnlData.Children
+    If Object.Type(objp) = "Panel" Then
+      For Each objx In objp.Children
+        Select Object.Type(objx)
+          Case "TextBox", "ComboBox"
+            stxValues.Add(objx.Tag & ":" & objx.Text)
+        End Select
+
+      Next
+    Endif
+  Next
+
+  MData.RecordNew(conData, strTab, MStarter.stxFieldsTableCurrentrent, stxValues)
+
+  Return intState
+
+End
