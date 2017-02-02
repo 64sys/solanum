@@ -165,6 +165,7 @@ Public Sub LoadTreeView()
   If MStarter.stxViewsEx.Count > 0 Then
 
     trvEntities.Add(MStarter.conProgram.Name, Application.Name, Picture["icon:/16/server"])
+
     For intTree = 0 To MStarter.stxViewsEx.Max
       strKey = MStarter.stxViewsEx[intTree][0]
       strText = MStarter.stxViewsEx[intTree][1]
