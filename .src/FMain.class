@@ -22,9 +22,14 @@
 ' Boston, MA  02110-1301  USA
 '
 
+Public strGridState As String
+
 Public Sub Form_Open()
 
+  Me.Width = 1280
+  Me.Height = 720
   HSplit1.Layout = [1, 5]
+
   LoadTreeView()
   LoadFilterAndOrder()
 
@@ -157,22 +162,53 @@ End
 
 Public Sub LoadTreeView()
 
-  Dim intTree As Integer
-  Dim strText As String
-  Dim strKey As String
-  Dim picTab As Picture
+  '  Dim intTree As Integer
+  Dim str As String
+  Dim res As Result
+  Dim strParent As String
+  ' Dim strParentKey As String
+  Dim strCycleKey As String
+  Dim strCycleText As String
 
-  If MStarter.stxViewsEx.Count > 0 Then
+  Dim strPlotText As String
+  Dim strPlotKey As String
+  Dim picPlot As Picture
 
-    trvEntities.Add(MStarter.conProgram.Name, Application.Name, Picture["icon:/16/server"])
+  Dim strPlantText As String
+  Dim strPlantKey As String
+  Dim picPlant As Picture
 
-    For intTree = 0 To MStarter.stxViewsEx.Max
-      strKey = MStarter.stxViewsEx[intTree][0]
-      strText = MStarter.stxViewsEx[intTree][1]
-      picTab = Picture[MStarter.stxViewsEx[intTree][2]]
-      trvEntities.Add(strKey, strText, picTab, MStarter.conProgram.Name)
-    Next
-  Endif
+  str = "select * from view_blocks"
+  res = MStarter.conProgram.Exec(str)
+
+  strParent = "application#" & Application.Name
+
+  trvEntities.Add(strParent, Application.Name, Picture["icon:/16/internet"])
+
+  While res.Available
+
+    strCycleKey = "cycles#" & res["blockcycleidx"]
+    strCycleText = res["blockcycle"]
+    If trvEntities.Exist(strCycleKey) = False Then
+      trvEntities.Add(strCycleKey, strCycleText, Picture["icon:/16/calendar"], strParent)
+    Endif
+
+    strPlotKey = "plots#" & res["blockplotidx"]
+    If trvEntities.Exist(strPlotKey) = False Then
+      strPlotText = res["blockplot"]
+      picPlot = Picture["icon:/16/office"]
+      trvEntities.Add(strPlotKey, strPlotText, picPlot, strCycleKey)
+    Endif
+
+    strPlantKey = "plants#" & res["blockplantidx"]
+    If trvEntities.Exist(strPlantKey) = False Then
+      strPlantText = res["blockplant"]
+      picPlant = Picture["icon:/16/flag"]
+      trvEntities.Add(strPlantKey, strPlantText, picPlant, strPlotKey)
+    Endif
+
+    res.MoveNext
+  Wend
 
 End
 
@@ -189,5 +225,409 @@ Public Sub grwData_Data(Row As Integer, Column As Integer)
   Else
     grwData.Data.Text = ""
   Endif
+
+End
+
+Public Sub trvEntities_Select()
+
+  Dim intFld As Integer
+  Dim strEntity As String
+  Dim strEKey As String
+  Dim strKeyText As String
+  Dim intx As Integer
+  Dim strSQL As String
+
+  strKeyText = trvEntities.Current.Key
+  lblInformation.Text = trvEntities.Current.Key
+
+  If InStr(trvEntities.Current.Key, "#") Then
+    strEntity = Split(trvEntities.Current.Key, "#")[0]
+    strEKey = Split(trvEntities.Current.Key, "#")[1]
+
+    Select strEntity
+      Case "application"
+        MStarter.stxProgram[4] = strEntity
+        Print "Entidad: " & strEntity & " Clave: " & strEKey
+      Case "cycles"
+        MStarter.stxProgram[4] = strEntity
+        Print "Entidad: " & strEntity & " Clave: " & strEKey
+      Case "plots" ' Esta es la entidad que desencadena el SQL para la parcela seleccionada.
+        MStarter.stxProgram[4] = "view_blocks"
+        Print "Entidad: " & strEntity & " Clave: " & strEKey
+        ' Por lo tanto tendremos una sentencia SQL y un resultado
+        strSQL = "select * from view_blocks where blockplotidx='" & strEKey & "' order by blockcode"
+        MStarter.stxProgram[5] = strSQL
+        MStarter.resProgram = MStarter.conProgram.Exec(strSQL)
+
+      Case "plants"
+        MStarter.stxProgram[4] = strEntity
+        Print "Entidad: " & strEntity & " Clave: " & strEKey
+    End Select
+  Endif
+
+  Select MStarter.stxProgram[4]
+
+    Case "view_blocks"
+      MStarter.stxFieldsViewCurrent.Clear
+
+      For intFld = 0 To MStarter.stxViewFields.Max
+        If MStarter.stxViewFields[intFld][0] = "view_blocks" Then
+          MStarter.stxFieldsViewCurrent.Add(MStarter.stxViewFields[intFld][1])
+        Endif
+      Next
+
+      strGridState = "loading"
+
+      If UpdateGrid() = 1 Then
+        If strGridState = "loaded" Then
+          cmdArrangeButtonOrders(MStarter.stxFieldsViewCurrent)
+          cmdArrangeButtonFilters()
+
+          For intx = 0 To MStarter.stxViewsEx.Max
+            If MStarter.stxViewsEx[intx][0] = MStarter.stxProgram[4] Then
+              MStarter.stxProgram[7] = MStarter.stxViewsEx[intx][1]
+            Endif
+          Next
+          tobImport.Enabled = True
+          tobImport.Tooltip = ("Importar") & " " & MStarter.stxProgram[7]
+
+          tobExport.Enabled = True
+          tobExport.Tooltip = ("Exportar") & " " & MStarter.stxProgram[7]
+        Endif
+      Endif
+  End Select
+
+End
+
+Public Function UpdateGrid() As Integer
+
+  Dim intFld As Integer
+  Dim int As Integer
+
+  grwData.Header = 1 ' Muestra solo el encabezado
+  grwData.ScrollBar = 3 ' Muestra los scrol vertical y horizontal
+  grwData.Mode = Select.Multiple
+
+  grwData.Rows.Count = 0
+
+  If MStarter.resProgram.Available Then
+    If MStarter.resProgram.Count > 0 Then
+      grwData.Rows.Count = 0
+      grwData.Rows.Count = MStarter.resProgram.Count
+    Endif
+  Endif
+
+  grwData.Columns.Count = MStarter.resProgram.Fields.Count
+
+  intFld = 0
+
+  For int = 0 To MStarter.stxViewFields.Max
+
+    If MStarter.stxViewFields[int][0] = MStarter.stxProgram[4] Then
+
+      grwData.Columns[intFld].Title = MStarter.stxViewFields[int][10]
+
+      Select MStarter.stxViewFields[int][6]
+        Case ""
+          MStarter.stxViewFields[int][6] = 75
+      End Select
+      grwData.Columns[intFld].Width = MStarter.stxViewFields[int][6]
+      strGridState = "loading"
+      Inc intFld
+
+    Endif
+
+  Next
+
+  If strGridState = "loading" Then
+    strGridState = "loaded"
+  Endif
+
+  Print MStarter.stxProgram[5]
+
+  Return 1
+
+End
+
+Public Sub grwData_ColumnResize(Column As Integer)
+
+  Dim intY As Integer
+
+  Select MStarter.stxViews.Find(MStarter.stxProgram[4])
+    Case -1
+      Message.Info(("La vista que intenta guardar no esta configurada adecuadamente.") & gb.NewLine & ("Contacte al desarrollador del programa para reportar el error."))
+    Case Else
+      For intY = 0 To MStarter.stxViewFields.Max
+        If MStarter.stxViewFields[intY][0] = MStarter.stxProgram[4] Then
+          If MStarter.stxViewFields[intY][1] = MStarter.stxFieldsViewCurrent[Column] Then
+            MStarter.stxViewFields[intY][6] = CStr(grwData.Columns[Column].Width)
+          Endif
+        Endif
+
+      Next
+
+      Wait 0.01
+
+      If strGridState = "loaded" Then
+        cmdArrangeButtonOrders(MStarter.stxFieldsViewCurrent)
+        cmdArrangeButtonFilters()
+      Endif
+
+  End Select
+
+End
+
+Public Sub cmdArrangeButtonFilters()
+
+  Dim btnFilter As Button
+
+  pnlDataFilter.Children.Clear
+  pnlDataFilter.Arrangement = Arrange.Fill
+
+  btnFilter = New Button(pnlDataFilter) As "GFilterType"
+
+  With btnFilter
+    .Name = "btnFilter~" & "OnWorking" '& stxButtonsFields[intA]
+    .Border = False
+    .Picture = Picture["icon:/16/filter"]
+    .Text = ("Los filtros todavía no están implementados")
+    .Tag = 0
+    .Expand = True
+    .Width = pnlDataFilter.Width
+    .Height = pnlDataFilter.Height
+  End With
+
+End
+
+Public Sub cmdArrangeButtonOrders(stxButtonsFields As String[])
+
+  Dim pnlOrder As Panel
+  Dim btnOrder As Button
+  Dim intView As Integer
+  Dim intA, intB, intXbtn As Integer
+  Dim stxFieldInfoTmp As New String[]
+
+  stxFieldInfoTmp.Clear
+  pnlDataOrder.Children.Clear
+  For intView = 0 To MStarter.stxViewFields.Max
+    If MStarter.stxViewFields[intView][0] = MStarter.stxProgram[4] Then
+      intA = MStarter.stxFieldsViewCurrent.Find(MStarter.stxViewFields[intView][1]) ' Busco el campo en la lista
+      If intA > -1 Then
+        pnlOrder = New Panel(pnlDataOrder)
+        With pnlOrder
+          .Name = "pnlOrder~" & stxButtonsFields[intA]
+          .Tag = intA
+          .Height = pnlDataOrder.Height - 2
+          .Width = grwData.Columns[intA].Width
+          Select intA
+            Case 0
+              intXbtn = 0
+            Case Else
+              intXbtn = 0
+              For intB = 0 To intA - 1
+                intXbtn = intXbtn + grwData.Columns[intB].Width
+              Next
+          End Select
+          .X = intXbtn
+          .Y = 0
+          .Arrangement = Arrange.Vertical
+        End With
+        btnOrder = New Button(pnlOrder) As "GOrderType"
+        With btnOrder
+          .Name = "btnOrder~" & stxButtonsFields[intA]
+          .Border = True
+          .Tag = intA
+          Select MStarter.stxViewFields[intView][3] ' Tipo de orden
+            Case "asc"
+              .Picture = Picture["icon:/16/sort-ascent"]
+            Case "desc"
+              .Picture = Picture["icon:/16/sort-descent"]
+            Case ""
+              .Picture = Null
+          End Select
+          .Expand = True
+          .Width = pnlOrder.Height
+          .Height = pnlOrder.Height
+        End With
+      Endif
+    Endif
+  Next
+
+End
+
+Public Sub GOrderType_Click()
+
+  Dim btn As Button
+  Dim int As Integer
+  Dim intColumn As Integer
+  Dim strFieldName As String
+
+  btn = Last
+  intColumn = CInt(btn.Tag)
+  strFieldName = MStarter.stxFieldsViewCurrent[intColumn]
+
+  For int = 0 To MStarter.stxViewFields.Max
+    If MStarter.stxViewFields[int][0] = MStarter.stxProgram[4] Then
+      If MStarter.stxViewFields[int][1] = strFieldName Then
+
+        Select btn.Picture
+          Case Null
+            btn.Picture = Picture["icon:/16/sort-ascent"]
+            MStarter.stxViewFields[int][3] = "asc"
+
+          Case Picture["icon:/16/sort-ascent"]
+            btn.Picture = Picture["icon:/16/sort-descent"]
+            MStarter.stxViewFields[int][3] = "desc"
+
+          Case Picture["icon:/16/sort-descent"]
+            btn.Picture = Null
+            MStarter.stxViewFields[int][3] = ""
+        End Select
+      Endif
+    Endif
+  Next
+
+  UpdateGrid()
+
+End
+
+Public Sub grwData_Scroll()
+
+  pnlDataFilter.ScrollX = grwData.ScrollX
+
+End
+
+Public Sub grwData_DblClick()
+
+  cmdRecordEdit()
+
+End
+
+Public Sub cmdRecordNew()
+
+  Dim strTable As String
+
+  strTable = Replace(MStarter.stxProgram[4], "view_", "")
+
+  FData.RunEditor(MStarter.conProgram, strTable)
+
+End
+
+Public Sub cmdRecordEdit()
+
+  Dim intKey As Integer
+  Dim strTable As String
+
+  strTable = Replace(MStarter.stxProgram[4], "view_", "")
+
+  If grwData.Current Then
+    intKey = CInt(grwData[grwData.Row, 0].Text)
+    FData.RunEditor(MStarter.conProgram, strTable, intKey)
+  Else
+    Message.Info("Debe seleccionar un registro de la lista")
+  Endif
+
+End
+
+Public Sub cmdRecordDelete()
+
+  Dim intKey As Integer
+  Dim intCount As Integer
+  Dim intOk As Integer
+  Dim intR As Integer
+  Dim strTable As String
+
+  strTable = Replace(MStarter.stxProgram[4], "view_", "")
+
+  For intR = 0 To grwData.Rows.Max
+    If grwData.Rows[intR].Selected = True Then
+      Inc intCount
+      intKey = CInt(grwData[intR, 0].Text)
+      If MData.RecordDelete(MStarter.conProgram, strTable, MStarter.stxTableFields, intKey) = -1 Then
+        Inc intOk
+      Endif
+    Endif
+  Next
+
+  If intCount > 0 Then
+    If intOk = intCount Then
+      UpdateGrid()
+    Else
+      Select intOk
+        Case 0
+          Message.Info("No se pudo borrar ningun registro")
+        Case Else
+          Message.Info("Hay registros que no se pudieron borrar")
+      End Select
+    Endif
+    UpdateGrid()
+  Else
+    Message.Info("Debe seleccionar registros de la lista")
+  Endif
+
+End
+
+Public Sub nmuShowOrders_Click()
+
+  If nmuShowOrders.Value = False Then
+    MStarter.stxProgram[9] = "no"
+  Else
+    MStarter.stxProgram[9] = "yes"
+  Endif
+
+  Print MStarter.stxProgram[9]
+
+  Select MStarter.stxProgram[9]
+    Case "yes"
+      pnlDataOrder.Visible = True
+      nmuShowOrders.Text = ("Ocultar la barra de orden")
+    Case "no"
+      pnlDataOrder.Visible = False
+      nmuShowOrders.Text = ("Mostrar la barra de orden")
+
+  End Select
+
+End
+
+Public Sub nmuShowFilters_Click()
+
+  If nmuShowFilters.Value = False Then
+    MStarter.stxProgram[8] = "no"
+  Else
+    MStarter.stxProgram[8] = "yes"
+  Endif
+
+  Print MStarter.stxProgram[8]
+
+  Select MStarter.stxProgram[8]
+    Case "yes"
+      pnlDataFilter.Visible = True
+      nmuShowFilters.Text = ("Ocultar la barra de filtro")
+    Case "no"
+      pnlDataFilter.Visible = False
+      nmuShowFilters.Text = ("Mostrar la barra de filtro")
+  End Select
+
+End
+
+Public Sub tobNewRecord_Click()
+
+  cmdRecordNew()
+
+End
+
+Public Sub tobSaveRecord_Click()
+
+End
+
+Public Sub tobDeleteRecord_Click()
+
+  cmdRecordDelete()
+
+End
+
+Public Sub tobEditRecord_Click()
+
+  cmdRecordEdit()
 
 End

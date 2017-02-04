@@ -3,11 +3,13 @@
 Title=Solanum
 Startup=MStarter
 Icon=logo.png
-Version=0.0.1
+Version=0.0.6
 Component=gb.image
 Component=gb.gui.qt
 Component=gb.form
 Component=gb.db
+Component=gb.desktop.x11
+Component=gb.desktop
 Component=gb.settings
 Component=gb.pcre
 Component=gb.xml

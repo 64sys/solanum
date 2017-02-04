@@ -7,22 +7,51 @@ Count=0
 [DebugWindow/MStarter.conProgram.Tables.Add(strtbl)]
 Geometry=[-10,19,224,280]
 
+[DebugWindow/MStarter.stxFieldsViewCurrent]
+Geometry=[-10,19,224,280]
+
+[DebugWindow/MStarter.stxTableFields[intFld]]
+Geometry=[918,440,224,481]
+
+[DebugWindow/MStarter.stxViewFields]
+Geometry=[-10,19,224,280]
+
+[DebugWindow/MStarter.stxViewFields[intY]]
+Geometry=[-10,19,224,280]
+
+[DebugWindow/MStarter.stxViewFields[int]]
+Geometry=[1071,381,235,378]
+
 [DebugWindow/Split(strTables, "\n")]
 Geometry=[-10,19,723,280]
+
+[DebugWindow/conProgram]
+Geometry=[18,74,413,501]
+
+[DebugWindow/connDB]
+Geometry=[58,74,224,280]
 
 [DebugWindow/stxParam]
 Geometry=[34,119,224,280]
 
+[DebugWindow/stxValues]
+Geometry=[-10,19,224,280]
+
+[Executable]
+Path="solanum.gambas"
+
 [OpenFile]
-Active=2
-File[1]=".src/FMain.form"
-Count=7
-File[2]=".src/FMain.class:7.174"
-File[3]=".src/std/FConfig.class:10.146"
-File[4]=".src/std/MStarter.module:2.117"
-File[5]=".src/std/FData.form"
-File[6]=".src/std/FData.class:33.60"
-File[7]=".src/gef/MData.module:38.66"
+Count=9
+Active=8
+File[1]=".src/gef/MData.module:0.150"
+File[2]=".src/std/MStarter.module:0.157"
+File[3]=".src/FMain.class:11.296"
+File[4]=".src/gef/MValidator.module:11.60"
+File[5]=".src/FPlot.form"
+File[6]=".src/gef/MUtility.module:0.0"
+File[7]=".src/gef/Msys.module:0.0"
+File[8]=".src/FMain.form"
+File[9]=".src/std/FAbout.class:0.157"
 
 [Watches]
 Count=0

@@ -36,11 +36,6 @@ Public Function DBSqlite(stxDB As String[], Optional strMod As String) As Connec
 
   strDBZip = File.Dir(stxDB[3]) &/ File.BaseName(stxDB[3]) & "-" & strTimeStamp & ".zip"
 
-  conCreate.Type = stxDB[0]
-  conCreate.Host = stxDB[1]
-  conCreate.Name = ""
-  conCreate.Open
-
   Select strMod
     Case "reset"
 
@@ -51,26 +46,41 @@ Public Function DBSqlite(stxDB As String[], Optional strMod As String) As Connec
       Endif
   End Select
 
-  Wait 0.2
+  conCreate.Type = stxDB[0]
+  conCreate.Host = stxDB[1]
+  conCreate.Name = ""
+  conCreate.Open
 
-  Select strMod
-    Case "empty"
-      If Not conCreate.Databases.Exist(stxDB[2]) Then
-        conCreate.Databases.Add(stxDB[2])
+  If Not conCreate.Databases.Exist(stxDB[2]) Then
+    conCreate.Databases.Add(stxDB[2])
+    Wait 0.4
+
+    If conCreate.Opened Then
+      conCreate.Close
+    Endif
+
+    conCreate.Name = stxDB[2]
+    conCreate.Open
+
+    If Exist("new.sql") Then
+      strSQLCreate = File.Load("new.sql")
+      conCreate.Exec(strSQLCreate)
+      Wait 0.4
+      If conCreate.Opened Then
+        conCreate.Close
       Endif
 
-    Case Else
-      If Not conCreate.Databases.Exist(stxDB[2]) Then
-        conCreate.Databases.Add(stxDB[2])
-      Endif
-      If Exist("new.sql") Then
-        strSQLCreate = File.Load("new.sql")
-        conCreate.Exec(strSQLCreate)
-      Else
-        Message.Warning(("No existe el archivo") & " " & "new.sql" & gb.NewLine & ("La base de datos no sera creada"))
-      Endif
-  End Select
-
+    Else
+      Message.Warning(("No existe el archivo") & " " & "new.sql" & gb.NewLine & ("La base de datos no sera creada"))
+    Endif
+  Endif
+  ' Else
+  '
+  ' conCreate.Type = stxDB[0]
+  ' conCreate.Host = stxDB[1]
+  ' conCreate.Name = stxDB[2]
+  ' conCreate.Open
+  '
   If conCreate.Opened Then
     conCreate.Close
   Endif
@@ -138,7 +148,6 @@ Public Function RecordNew(connDB As Connection, strTable As String, stxDBFields 
   If resExist.Available Then
     If resExist.Count > 0 Then
       Print "El registro ya existe"
-      'Message.Info("El registro ya existe")
     Endif
 
   Else
@@ -349,10 +358,10 @@ Public Function RecordWrite(connDB As Connection, strTable As String, stxEdit As
 
   If stxValues.Count > 0 Then
     For intVal = 0 To stxValues.Max
-      stxTag.Add(Split(stxValues[intVal], ":")[0])
-      stxVal.Add(Split(stxValues[intVal], ":")[1])
-      If Split(stxValues[intVal], ":")[0] = strFieldKey Then
-        intKey = CInt(Split(stxValues[intVal], ":")[1])
+      stxTag.Add(Split(stxValues[intVal], "\t")[0])
+      stxVal.Add(Split(stxValues[intVal], "\t")[1])
+      If Split(stxValues[intVal], "\t")[0] = strFieldKey Then
+        intKey = CInt(Split(stxValues[intVal], "\t")[1])
         'Break
       Endif
     Next
@@ -382,7 +391,7 @@ Public Function RecordWrite(connDB As Connection, strTable As String, stxEdit As
               intKeyRef = RecordExist(connDB, stxEdit[intField][7], stxEdit[intField][9], stxEdit[intField][8], strVal)
               Select intKeyRef
                 Case -1 'No existe el registor de referencia
-                  stxVKey.Add(stxEdit[intField][9] & ":" & strVal)
+                  stxVKey.Add(stxEdit[intField][9] & "\t" & strVal)
                   RecordNew(connDB, stxEdit[intField][7], stxEdit, stxVKey)
                 Case Else ' Existe
                   If resEdit[strTag] <> intKeyRef Then
@@ -727,25 +736,13 @@ Public Function getIndex(connDB As Connection, strTab As String) As String[]
 
   Dim strSQLk As String
   Dim resDBk As Result
-  '  Dim strSentenceSQL As String
+
   Dim strSentence As String
   Dim stxSentence As New String[]
-  '  Dim strFDOrigin As String
-  '  Dim strTBReference As String
-  '  Dim strFDReference As String
-  '  Dim tblReference As Table
-  '  Dim strFDShow As String
-  '  Dim stxRefFields As New String[]
-  '  Dim fldReference As Field
+
   Dim stxIndex As New String[]
   Dim intSnt As Integer
 
-  '  Dim stxWordsSQLite As New String[]
-  '  Dim stxYesSQLite As New String[]
-  '  Dim stxNotSQLite As New String[]
-  '  Dim inxKeySQLite As New Integer[]
-  '  Dim intWrd As Integer
-  '  Dim intkey As Integer
   Dim intPos1 As Integer
   Dim intPos2 As Integer
   Dim intFi As Integer
@@ -1043,6 +1040,31 @@ Public Function RecordExist(connDB As Connection, strTable As String, strFieldVa
 
 End
 
+Public Function Rcount(con As Connection, strTOV As String) As Boolean '' strTOV es el nombre de una tabla o de una vista, la funcióm devuelve verdadero si la tabla o vista contiene registros, caso contrario devuelve falso
+
+  Dim str As String
+  Dim res As Result
+  Dim bol As Boolean
+
+  bol = False
+
+  str = "select * from " & strTOV
+
+  res = con.Exec(str)
+
+  If res.Available Then
+    Select res.Count
+      Case 0
+        bol = False
+      Case Else
+        bol = True
+    End Select
+  Endif
+
+  Return bol
+
+End
+
 Public Function RecordDelete(connDB As Connection, strTable As String, stxDBFields As String[][], intKey As Integer) As Integer '' Devuelve -1 si no existe o un numero (la clave) si existe el texto que se pasa como parametro junto con la tabla y el campo.
 
   Dim strSQLDelete As String
@@ -1182,7 +1204,6 @@ End
 Public Function TableMake2(cnx As Connection, stxParam As String[]) As Integer ''<p>Crea una tabla de combinacion de otras dos tablas en la conexion que se le pasa como parametro. Donde el orden de los paramentros dentro de la matriz debe ser el siguiente:</p><ul><li>0 Nombre de la tabla 1</li><li>1 Nombre del campo clave 1</li><li>2 Nombre del campo a mostrar 1</li><li>3 Nombre de la tabla 21</li><li>4 Nombre del campo clave 2</li><li>5 Nombre del campo a mostrar 2</li></ul>
 
   Dim tbl As Table
-  '  Dim int As Integer
   Dim strTable As String
   Dim strFKey As String 'Nombre del campo que sera Primary Key
 
@@ -1273,11 +1294,6 @@ Public Function ViewMake1(cnx As Connection, stxParam As String[]) As Integer ''
     intfld = 0
     For Each fld In .Fields
 
-      ' If intFld = .Fields.Count - 1 Then
-      '   strEnd = ""
-      ' Else
-      '   strEnd = ","
-      ' Endif
       Select .PrimaryKey.Find(fld.Name)
         Case 0 'es la primera clave el resto, si las hubiera, se destartan
           stxFields.Add(fld.Name & strEnd)
@@ -1288,7 +1304,6 @@ Public Function ViewMake1(cnx As Connection, stxParam As String[]) As Integer ''
 
           Select fld.Type
             Case db.Integer
-              'stxFinfo = getFieldInfo(cnx, stxParam[0], fld.Name)
               'Esto esta manual porque no logre poner foreign keys por código
 
               strTb = stxTb[intX]
@@ -1320,8 +1335,6 @@ Public Function ViewMake1(cnx As Connection, stxParam As String[]) As Integer ''
   strCreate &= stxJoints.Join("\n")
   strCreate &= "\n"
   strCreate &= "ORDER BY " & stxOrders.Join(", ")
-  'strCreate &= "\n"
-  'strCreate &= ")"
 
   cnx.Exec(strCreate)
 
@@ -1410,7 +1423,6 @@ Public Sub MDBtoSQL(strFilePath As String, lblInformation As Label) As String[]
   Dim strStatTable As String
 
   Dim intW, intQtyTb, intBytes As Integer
-  'Dim intRecords As Integer
 
   Dim stxStatTablesTmp As New String[]
   Dim stxStatTables As New String[]
@@ -1441,8 +1453,6 @@ Public Sub MDBtoSQL(strFilePath As String, lblInformation As Label) As String[]
   strTools = Msys.PkgStat(strPkg)
 
   lblInformation.Text = ("mdbtools instalado correctamente")
-  'F10app.lblImport.Text = ("mdbtools instalado correctamente")
-  'Exec ["notify-send", "-t", "2000", ("Sistema"), ("mdbtools instalado correctamente")]
 
   ' Es el nombre de la base de datos sin el .mdb o .accdb
   strJobName = String.LCase(File.BaseName(strFilePath))
@@ -1460,13 +1470,7 @@ Public Sub MDBtoSQL(strFilePath As String, lblInformation As Label) As String[]
       strFinalPath = File.Dir(strFilePath)
   End Select
 
-  'Print "Permisos para el usuario: " & User.Name & " " & Stat(File.Dir(strFilePath)).Perm[User.Name]
-
-  'strJobPath = User.Home &/ ".databases" &/ strJobName
-
   lblInformation.Text = strJobPath
-  'F10app.lblImport.Text = strJobPath
-  'Exec ["notify-send", "-t", "2000", ("Actividad"), strJobPath]
 
   If Exist(strJobPath) = False Then
     Shell "mkdir -p '" & strJobPath & "'"
@@ -1477,8 +1481,6 @@ Public Sub MDBtoSQL(strFilePath As String, lblInformation As Label) As String[]
   strStatVersion = Replace(strStatVersion, "\n", "")
 
   lblInformation.Text = strStatVersion
-  'F10app.lblImport.Text = strStatVersion
-  'Exec ["notify-send", "-t", "2000", ("Actividad"), strStatVersion]
 
   Shell "mdb-tables -S -1 '" & strFilePath & "' 2>&1" To strStatTables
 
@@ -1499,8 +1501,6 @@ Public Sub MDBtoSQL(strFilePath As String, lblInformation As Label) As String[]
   Wend
 
   lblInformation.Text = ("Esquemas extraidos")
-  'F10app.lblImport.Text =
-  'Exec ["notify-send", "-t", "2000", ("Actividad"), ("Esquemas extraidos")]
 
   stxStatFieldsTmp = Split(File.Load(strJobPath &/ strJobName & "-sch-postgres.sql"), "\n")
 
@@ -1523,8 +1523,6 @@ Public Sub MDBtoSQL(strFilePath As String, lblInformation As Label) As String[]
   Next
 
   lblInformation.Text = ("Nombres de campos cargados")
-  'F10app.lblImport.Text = ("Nombres de campos cargados")
-  'Exec ["notify-send", "-t", "2000", ("Actividad"), ("Nombres de campos cargados")]
 
   File.Save(strJobPath &/ "fields.txt", stxStatFields.Join("\n"))
 
@@ -1538,14 +1536,9 @@ Public Sub MDBtoSQL(strFilePath As String, lblInformation As Label) As String[]
   Wend
 
   lblInformation.Text = ("Nombres de tablas cargados")
-  'F10app.lblImport.Text = ("Nombres de tablas extraidos")
-  'Exec ["notify-send", "-t", "2000", ("Actividad"), ("Nombres de tablas extraidos")]
 
   'Filtrado y ordenamiento de la lista de tablas
   If strStatTables <> "" Then
-
-    'stxStatTablesTmp.Clear
-    'stxDatabaseInfo.Clear
 
     stxStatTablesTmp = Split(strStatTables, "\n")
     stxStatTablesTmp.Sort
@@ -1588,7 +1581,6 @@ Public Sub MDBtoSQL(strFilePath As String, lblInformation As Label) As String[]
     prsB = Shell "mdb-export -D %Y%m%d%H%M%S -H -b strip -R '::rrr::' -d '::ccc::' " & strFilePath & " " & strStatTable & " > " & strFileExt
     Exec ["notify-send", "-t", "2000", ("Sistema"), ("Extrayendo datos de") & " " & strStatTable]
     While prsB.State = prsB.Running
-      'F10app.lblImport.Text = ("Extrayendo datos de") & " " & strStatTable
       lblInformation.Text = ("Extrayendo datos de") & " " & strStatTable
 
       Wait 0.1
@@ -1597,7 +1589,6 @@ Public Sub MDBtoSQL(strFilePath As String, lblInformation As Label) As String[]
     prsC = Shell "tr -cd '[:print:]' < " & strFileExt & " | tr -s ' ' | sed 's/\\d96//g' | sed 's/\\d39//g' | sed 's/,/~/g' | sed 's/\\d34/\\d39/g'  | sed 's/::ccc::::ccc::/::ccc::\\d39\\d39::ccc::/g' | sed 's/::ccc::::ccc::/::ccc::\\d39\\d39::ccc::/g' | sed 's/::ccc::::ccc::/::ccc::\\d39\\d39::ccc::/g' | sed 's/::rrr::/\\n/g' | sed '/^$/d' | sed -e 's/^/INSERT INTO `" & strStatTable & "` VALUES (/' | sed 's/.*/&);/' | sed 's/::ccc::\\d41;/::ccc::\\d39\\d39\\d41;/g' | sed 's/::ccc::/,/g' > " & strFileSQL
     Exec ["notify-send", "-t", "2000", ("Sistema"), ("Formateando datos de") & " " & strStatTable]
     While prsC.State = prsC.Running
-      'F10app.lblImport.Text = ("Formateando datos de") & " " & strStatTable
       lblInformation.Text = ("Formateando datos de") & " " & strStatTable
       Wait 0.1
     Wend
@@ -1606,7 +1597,6 @@ Public Sub MDBtoSQL(strFilePath As String, lblInformation As Label) As String[]
 
   Next
 
-  'F10app.lblImport.Text = ("Base de datos completada")
   Exec ["notify-send", "-t", "2000", ("Sistema"), ("Base de datos completada")]
 
   ' Extraccion de los archivos csv de las tablas

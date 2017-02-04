@@ -1,21 +1,21 @@
 # Gambas Form File 3.0
 
 { Form Form
-  MoveScaled(0,0,77,65)
+  MoveScaled(0,0,90,65)
   Icon = Picture["logo.png"]
   Arrangement = Arrange.Vertical
   { mnuFile Menu
     Text = ("Archivo")
     { mnuOpen Menu
-      Text = ("Abrir parcela")
+      Text = ("Abrir una parcela")
       Picture = Picture["icon:/16/open"]
     }
     { mnuNew Menu
-      Text = ("Crear parcela")
+      Text = ("Crear una parcela")
       Picture = Picture["icon:/16/new"]
     }
     { mnuPlot Menu
-      Text = ("Modificar parcela")
+      Text = ("Modificar una parcela")
       Picture = Picture["icon:/16/properties"]
     }
     { nmuImport Menu
@@ -47,16 +47,16 @@
   { Menu1 Menu
     Text = ("Acciones")
     { mnuEmail Menu
-      Text = ("Eviar un correo electrónico")
+      Text = ("Eviar parcela por correo electrónico")
       Picture = Picture["icon:/16/mail"]
     }
     { nmuReportSeedling Menu
-      Text = ("Recuento de plantines")
-      Picture = Picture["icon:/16/print"]
+      Text = ("Recuento de plántulas")
+      Picture = Picture["icon:/16/bookmark"]
     }
     { Menu2 Menu
       Text = ("Recuento de materiales")
-      Picture = Picture["icon:/16/print"]
+      Picture = Picture["icon:/16/office"]
     }
   }
   { mnuConfiguration Menu
@@ -66,12 +66,16 @@
       Picture = Picture["icon:/16/tools"]
     }
     { nmuShowOrders Menu
-      Text = ("Orden")
+      #Translate = False
+      Text = "Orden"
       Picture = Picture["icon:/16/sort-ascent"]
+      Toggle = True
     }
     { nmuShowFilters Menu
-      Text = ("Filtro")
+      #Translate = False
+      Text = "Filtro"
       Picture = Picture["icon:/16/filter"]
+      Toggle = True
     }
   }
   { mnuInfo Menu
@@ -86,54 +90,69 @@
     }
   }
   { Panel8 Panel
-    MoveScaled(0,1,76,5)
+    MoveScaled(0,1,89,5)
     Arrangement = Arrange.Horizontal
     { tobOpen ToolButton
       MoveScaled(0,0,5,5)
-      ToolTip = ("Leer las frases a traducir y presentar un estado de la situacion")
+      ToolTip = ("Abrir una parcela")
       Picture = Picture["icon:/22/open"]
     }
     { tobNew ToolButton
       MoveScaled(6,0,5,5)
-      ToolTip = ("Leer las frases a traducir y presentar un estado de la situacion")
+      ToolTip = ("Crear una parcela")
       Picture = Picture["icon:/22/new"]
     }
     { tobPlot ToolButton
       MoveScaled(12,0,5,5)
-      ToolTip = ("Leer las frases a traducir y presentar un estado de la situacion")
+      ToolTip = ("Modificar una parcela")
       Picture = Picture["icon:/22/properties"]
     }
+    { tobImport ToolButton
+      MoveScaled(19,0,5,5)
+      ToolTip = ("Importar contactos")
+      Picture = Picture["icon:/22/unindent"]
+    }
+    { tobExport ToolButton
+      MoveScaled(25,0,5,5)
+      ToolTip = ("Exportar contactos")
+      Picture = Picture["icon:/22/indent"]
+    }
     { tobEmail ToolButton
-      MoveScaled(18,0,5,5)
-      ToolTip = ("Eviar un correo electrónico")
+      MoveScaled(34,0,5,5)
+      ToolTip = ("Eviar parcela por correo electrónico")
       Picture = Picture["icon:/22/mail"]
     }
-    { tobReport ToolButton
-      MoveScaled(23,0,5,5)
-      ToolTip = ("Imprimir la lista de contactos")
-      Picture = Picture["icon:/22/print"]
+    { tobReportPlants ToolButton
+      MoveScaled(39,0,5,5)
+      ToolTip = ("Recuento de plántulas")
+      Picture = Picture["icon:/22/bookmark"]
+    }
+    { tobReportMaterials ToolButton
+      MoveScaled(45,0,5,5)
+      ToolTip = ("Recuento de materiales")
+      Picture = Picture["icon:/22/office"]
     }
     { tobPreferences ToolButton
-      MoveScaled(29,0,5,5)
+      MoveScaled(53,0,5,5)
       ToolTip = ("Preferencias")
       Picture = Picture["icon:/22/tools"]
     }
+    { Panel1 Panel
+      MoveScaled(66,1,5,3)
+      Expand = True
+    }
     { tobAbout ToolButton
-      MoveScaled(34,0,5,5)
+      MoveScaled(72,0,5,5)
       ToolTip = ("Acerca de")
       Picture = Picture["icon:/22/info"]
     }
     { tobHelp ToolButton
-      MoveScaled(39,0,5,5)
-      ToolTip = ("Acerca de")
+      MoveScaled(78,0,5,5)
+      ToolTip = ("Ayuda")
       Picture = Picture["icon:/22/question"]
     }
-    { Panel1 Panel
-      MoveScaled(64,1,5,3)
-      Expand = True
-    }
     { tobQuit ToolButton
-      MoveScaled(70,0,5,5)
+      MoveScaled(83,0,5,5)
       ToolTip = ("Leer las frases a traducir y presentar un estado de la situacion")
       Picture = Picture["icon:/22/quit"]
     }
@@ -178,7 +197,7 @@
         }
       }
       { pnlDataControls Panel
-        MoveScaled(0,27,41,4)
+        MoveScaled(0,26,41,4)
         Background = Color.TextBackground
         Arrangement = Arrange.Horizontal
         { tobNewRecord ToolButton
@@ -201,6 +220,15 @@
           ToolTip = ("Editar")
           Picture = Picture["icon:/16/edit"]
         }
+      }
+      { pnlDataSpecial ScrollView
+        MoveScaled(0,37,41,4)
+        Visible = False
+        Background = Color.TextBackground
+        Arrangement = Arrange.Horizontal
+        Padding = 1
+        Border = False
+        ScrollBar = Scroll.None
       }
     }
   }

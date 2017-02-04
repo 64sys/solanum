@@ -55,10 +55,6 @@ Public Function OnlyTextParenthesis(strInput As String) As String '' Validación
 
 End
 
-Public Function DictFeeder(strWord As String[], strLang As String) As String '' Lista palabras en tres arcivos LANG_words.txt donde LANG es ES,EN etc.
-
-End
-
 Public Function OnlyLeters(strInput As String) As String '' Validación de palabras.
 
   Dim int As Integer

@@ -2,12 +2,14 @@ MStarter
 Solanum
 0
 0
-0.0.1
+0.0.6
 
 gb.image
 gb.gui.qt
 gb.form
 gb.db
+gb.desktop.x11
+gb.desktop
 gb.settings
 gb.pcre
 gb.xml

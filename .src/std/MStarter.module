@@ -28,17 +28,14 @@ Public conProgram As New Connection ' Conexión a la base de datos
 
 Public stxTables As New String[] ' Lista de tablas
 Public stxTableFields As New String[][] 'Lista de campos de las tablas
-
 Public stxViews As New String[] ' Lista de vistas
+Public stxViewsEx As New String[][] ' Lista de vistas mejorada
 Public stxViewFields As New String[][] 'Lista de campos de las vistas
 
 Public stxTitles As New String[][] 'Lista de títulos de los campos de las vistas y de las tablas
 
-Public stxLanguage As New String[][] '' <ul><li>0 Acronimo de dos letras "es"</li><li>1 Acronimo de tres letras "spa"</li><li>2 Nombre en inglés "Spanish"</li><li>3 Nombre nativo "Español"</li><li>4 Grupo del idioma "Indo-European"</li><li>5 Alfabeto "Latn" (latino)</li><li>6 Traducir [True/False]</li></ul>
-
-Public stxFieldsTableCurrentrent As New String[] ' lista de campos para crear los botones de filtros
-Public stxFieldsViewCurrentrent As New String[] ' lista de campos para crear los botones de filtros
-
+'Public stxFieldsTableCurrent As New String[] ' lista de campos para crear los botones de filtros
+Public stxFieldsViewCurrent As New String[] ' lista de campos para crear los botones de filtros
 Public resProgram As Result ' ok ///////
 
 Public Sub Main()
@@ -48,13 +45,15 @@ Public Sub Main()
   Dim strSQL As String
   Dim resSQL As Result
   Dim intTable As Integer
+  Dim intView As Integer
   Dim strTableTmp As String
+  Dim strViewTmp As String
   Dim strDBName As String
   Dim stxTmp As New Variant[][]
   Dim intTmp As Integer
   Dim intP As Integer
-  Dim intLine As Integer
-  Dim strP0 As String
+  '  Dim intLine As Integer
+  ' Dim strP0 As String
 
   strAppPath = User.Home &/ "." & Application.Name
   stxDBEngines = MUtility.FileLoad("engines.txt") ' Motores de bases de datos soportados por gambas
@@ -84,19 +83,58 @@ Public Sub Main()
   stxProgram[2] = Settings["Program/Database-Name", strDBName]
   stxProgram[3] = Settings["Program/Database-Path", strAppPath &/ strDBName]
   stxProgram[4] = Settings["Program/Plot-Current", ""]
-  stxProgram[5] = ""
+  stxProgram[5] = Settings["Program/SQL-Current", ""]
   stxProgram[6] = ""
   stxProgram[7] = ""
   stxProgram[8] = Settings["Program/Show-Filter-Bar", "no"]
   stxProgram[9] = Settings["Program/Show-Order-Bar", "no"]
 
   ' Existencia de la base de datos.///////////////////////////////////////////////
-  conProgram = MData.DBSqlite(stxProgram, "empty") ' Si no existe se crea una vacia
+  conProgram = MData.DBSqlite(stxProgram) ' Si no existe se crea una vacia
   conProgram.Name = stxProgram[2]
   conProgram.Open
 
   ' Comprobación de la existencia de las tablas y sus campos.
-  Structure()
+  'Structure()
+
+  ' Analisis de la base de datos.////////////////////////////////////////////////////
+
+  LoadTitles() ' Carga de los títulos de los campos
+
+  stxTables.Clear
+  stxTables.Insert(MData.getTables(conProgram, "table")) ' Lista de TABLAS
+
+  stxTableFields.Clear
+  For intTable = 0 To stxTables.Max
+    strTableTmp = stxTables[intTable]
+    strSQL = "select * from " & strTableTmp
+    resSQL = conProgram.Exec(strSQL)
+
+    stxTmp.Clear
+    stxTmp.Insert(MData.getFields(conProgram, strTableTmp, "table", stxTitles))
+
+    For intTmp = 0 To stxTmp.Max
+      stxTableFields.Add(stxTmp[intTmp])
+    Next
+  Next
+  Print "###Tablas###"
+  For intP = 0 To stxTableFields.Max
+    Print stxTableFields[intP].Join(":")
+  Next
+
+  stxViews.Clear
+  stxViews.Insert(MData.getTables(conProgram, "view")) ' Lista de VISTAS
+
+  For intView = 0 To stxViews.Max
+    strViewTmp = stxViews[intView]
+    strSQL = "select * from " & strViewTmp
+    resSQL = conProgram.Exec(strSQL)
+    stxViewFields.Insert(MData.getFields(conProgram, strViewTmp, "view", stxTitles))
+  Next
+  Print "###Vistas ###"
+  For intP = 0 To stxViewFields.Max
+    Print stxViewFields[intP].Join(":")
+  Next
 
   ' Desde donde se esta ejecutando la aplicación
   Select MUtility.WhereRun()
@@ -108,25 +146,30 @@ Public Sub Main()
 
   ' Apertura del formulario principal
   If conProgram.Opened Then
-    FMain.Show()
+    If MData.Rcount(conProgram, "plots") Then
+      If MData.Rcount(conProgram, "view_blocks") Then
+        FMain.Show()
+      Else
+        Message.Info(("Debe verificar las parcelas"))
+        FData.RunEditor(conProgram, "blocks")
+      Endif
+    Else
+      Message.Info(("Debe crear una parcela antes de comenzar"))
+
+    Endif
   Else
     Message.Warning(("No se pudo abrir la conexión a la base de datos"))
   Endif
 
 End
 
-Public Function Structure() '' Verifica y crea la estructura de la base de datos usando la informacion minima del archivo entities.txt.
+Public Sub Structure() '' Verifica y crea la estructura de la base de datos usando la informacion minima del archivo entities.txt.
 
   Dim strTables As String
   Dim strY As String
-  Dim strX As String
   Dim int As Integer
-  Dim tbl As Table
-  Dim fld As Field
   Dim stxTmp As New String[]
   Dim stxFields As New String[][]
-  Dim strTyp As String[]
-  Dim strFld As String[]
   Dim strTbl As String
 
   If Exist("entities.txt") = True Then
@@ -157,15 +200,32 @@ End
 Public Function Terminator() As Integer ''Funcion que guarda las configuraciones que se modificaron en el programa antes de cerrarlo.
 
   Dim int As Integer
-  Dim strLang As String
-  Dim strValue As String
+
+  For int = 0 To stxViewFields.Max
+
+    Settings[stxViewFields[int][0] & "-Order" &/ stxViewFields[int][1]] = stxViewFields[int][3]
+    Settings[stxViewFields[int][0] & "-FilterType" &/ stxViewFields[int][1]] = stxViewFields[int][4]
+    Settings[stxViewFields[int][0] & "-FilterValue" &/ stxViewFields[int][1]] = stxViewFields[int][5]
+
+    Select stxViewFields[int][6]
+      Case "", "75"
+        Settings[stxViewFields[int][0] & "-Width" &/ stxViewFields[int][1]] = ""
+      Case Else
+        Settings[stxViewFields[int][0] & "-Width" &/ stxViewFields[int][1]] = stxViewFields[int][6]
+    End Select
+
+    'Settings[stxViewFields[int][0] & "-Spare1" &/ stxViewFields[int][1]] = stxViewFields[int][7]
+    'Settings[stxViewFields[int][0] & "-Spare2" &/ stxViewFields[int][1]] = stxViewFields[int][8]
+    'Settings[stxViewFields[int][0] & "-Spare3" &/ stxViewFields[int][1]] = stxViewFields[int][9]
+
+  Next
 
   Settings["Program/Database-Engine"] = stxProgram[0]
   Settings["Program/Database-Host"] = stxProgram[1]
   Settings["Program/Database-Name"] = stxProgram[2]
   Settings["Program/Database-Path"] = stxProgram[3]
   Settings["Program/Plot-Current"] = stxProgram[4]
-  Settings["Program/Spare5"] = stxProgram[5]
+  Settings["Program/SQL-Current"] = stxProgram[5]
   Settings["Program/Spare6"] = stxProgram[6]
   Settings["Program/Spare7"] = stxProgram[7]
   Settings["Program/Show-Filter-Bar"] = stxProgram[8]
@@ -174,5 +234,30 @@ Public Function Terminator() As Integer ''Funcion que guarda las configuraciones
   Settings.Save
 
   Return 1
+
+End
+
+Private Function LoadTitles() '' La carga de títulos de esta manera permite luego traducir la aplicacion mas facilmente. Si se usa un método con archivo de texto estos textos no pueden traducirse.
+
+  stxTitles.Add(["blocks", "blockidx", ("Índice")])
+  stxTitles.Add(["blocks", "blockplot", ("Parcela")])
+  stxTitles.Add(["blocks", "blockcycle", ("Ciclo")])
+  stxTitles.Add(["blocks", "blockcode", ("Cuadro")])
+  stxTitles.Add(["blocks", "blockplant", ("Planta")])
+
+  stxTitles.Add(["view_sections", "sectionqty", ("Total")])
+
+  stxTitles.Add(["view_blocks", "blockidx", ("Índice")])
+  stxTitles.Add(["view_blocks", "blockplotidx", ("id")])
+  stxTitles.Add(["view_blocks", "blockplot", ("Parcela")])
+  stxTitles.Add(["view_blocks", "blockcycleidx", ("id")])
+  stxTitles.Add(["view_blocks", "blockcycle", ("Ciclo")])
+  stxTitles.Add(["view_blocks", "blockplotcycle", ("Cultivo")])
+  stxTitles.Add(["view_blocks", "blockcode", ("Cuadro")])
+  stxTitles.Add(["view_blocks", "blockplantidx", ("id")])
+  stxTitles.Add(["view_blocks", "blockplant", ("Planta")])
+
+  ' Nombres de tablas y vistas
+  stxViewsEx.Add(["view_blocks", ("Cuadros"), "icon:/16/ok"])
 
 End

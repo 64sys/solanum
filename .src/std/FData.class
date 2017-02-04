@@ -41,6 +41,8 @@ Public Sub RunEditor(con As Connection, strTable As String, Optional intKey As I
   If MakeControls(strTable, intKey) = 1 Then
     Me.Tag = intKey
     Me.ShowModal()
+  Else
+    Message.Warning(("No se ha podido iniciar la parcela"))
   Endif
 
 End
@@ -72,7 +74,7 @@ Public Sub btnOK_Click()
     MData.RecordNew(conData, strTab, MStarter.stxTableFields, stxValues)
   Endif
 
-  FMain.UpdateGrid()
+  '  FMain.UpdateGrid()
 
   Me.Close
 
@@ -104,88 +106,86 @@ Public Function MakeControls(strTable As String, Optional intKey As Integer) As 
   pnlData.Children.Clear
   pnlData.Arrangement = 3
 
-  If intKey <> "" Then
-    ' Busqueda del campo primary key de la tabla
-    For intFld = 0 To MStarter.stxTableFields.Max
-      If MStarter.stxTableFields[intFld][0] = strTable Then
-        If MStarter.stxTableFields[intFld][5] = "YK" Then
-          strSQLEdit = "select * from " & MStarter.stxTableFields[intFld][0]
-          strSQLEdit &= " where " & MStarter.stxTableFields[intFld][1]
-          strSQLEdit &= "='" & CStr(intKey) & "'"
+  'If intKey <> 0 Then
+  ' Busqueda del campo primary key de la tabla
+  For intFld = 0 To MStarter.stxTableFields.Max
+    If MStarter.stxTableFields[intFld][0] = strTable Then
+      If MStarter.stxTableFields[intFld][5] = "YK" Then
+        strSQLEdit = "select * from " & MStarter.stxTableFields[intFld][0]
+        strSQLEdit &= " where " & MStarter.stxTableFields[intFld][1]
+        strSQLEdit &= "='" & CStr(intKey) & "'"
 
-          resEdit = conData.Exec(strSQLEdit)
+        resEdit = conData.Exec(strSQLEdit)
 
-        Endif
       Endif
-    Next
+    Endif
+  Next
 
-    For intFld = 0 To MStarter.stxTableFields.Max
-      If MStarter.stxTableFields[intFld][0] = strTable Then
-        'If MStarter.stxTableFields[intFld][5] <> "YK" Then
-        Select MStarter.stxTableFields[intFld][5] ' Si el campo es Primary Key o no
-          Case "YK"
-            bolReadonly = True
-            intWidt = 60
+  For intFld = 0 To MStarter.stxTableFields.Max
+    If MStarter.stxTableFields[intFld][0] = strTable Then
+      Select MStarter.stxTableFields[intFld][5] ' Si el campo es Primary Key o no
+        Case "YK"
+          bolReadonly = True
+          intWidt = 60
 
-          Case "NK"
-            bolReadonly = False
-            intWidt = 120
-        End Select
-        '--------------------------------
-        pnl = New Panel(pnlData)
-        pnl.Name = "pnl-" & MStarter.stxTableFields[intFld][1] 'strFieldName
-        pnl.Width = intWidt
-        pnl.Height = 58
-        pnl.Arrangement = 2
-        pnl.Padding = 2
+        Case "NK"
+          bolReadonly = False
+          intWidt = 120
+      End Select
+      '--------------------------------
+      pnl = New Panel(pnlData)
+      pnl.Name = "pnl-" & MStarter.stxTableFields[intFld][1] 'strFieldName
+      pnl.Width = intWidt
+      pnl.Height = 58
+      pnl.Arrangement = 2
+      pnl.Padding = 2
 
-        lbl = New Label(pnl)
-        lbl.Name = "lbl-" & MStarter.stxTableFields[intFld][1] 'strFieldName
-        lbl.Text = MStarter.stxTableFields[intFld][10] 'strFieldName
-        lbl.Width = intWidt
-        lbl.Height = 28
+      lbl = New Label(pnl)
+      lbl.Name = "lbl-" & MStarter.stxTableFields[intFld][1] 'strFieldName
+      lbl.Text = MStarter.stxTableFields[intFld][10] 'strFieldName
+      lbl.Width = intWidt
+      lbl.Height = 28
 
-        Select MStarter.stxTableFields[intFld][7]
-          Case ""
-            txo = New TextBox(pnl)
-            txo.Name = "txo-" & MStarter.stxTableFields[intFld][1] 'strFieldName
-            txo.Tag = MStarter.stxTableFields[intFld][1] 'strFieldName
-            txo.Width = intWidt
-            txo.Height = 28
-            txo.ReadOnly = bolReadonly
+      Select MStarter.stxTableFields[intFld][7]
+        Case ""
+          txo = New TextBox(pnl)
+          txo.Name = "txo-" & MStarter.stxTableFields[intFld][1] 'strFieldName
+          txo.Tag = MStarter.stxTableFields[intFld][1] 'strFieldName
+          txo.Width = intWidt
+          txo.Height = 28
+          txo.ReadOnly = bolReadonly
 
+          If resEdit.Available Then
+            txo.Text = resEdit[MStarter.stxTableFields[intFld][1]]
+          Endif
+
+        Case Else
+          strComboSql = "select " & MStarter.stxTableFields[intFld][8] & ", "
+          strComboSql &= MStarter.stxTableFields[intFld][9] & " from "
+          strComboSql &= MStarter.stxTableFields[intFld][7] & " order by " & MStarter.stxTableFields[intFld][9] & " asc"
+
+          resCombo = conData.Exec(strComboSql)
+
+          cmo = New ComboBox(pnl)
+          cmo.Name = "cmo-" & MStarter.stxTableFields[intFld][1]
+          cmo.Tag = MStarter.stxTableFields[intFld][1]
+          cmo.Width = pnl.Width
+          cmo.Height = 28
+          While resCombo.Available
+            cmo.Add(resCombo[MStarter.stxTableFields[intFld][9]])
             If resEdit.Available Then
-              txo.Text = resEdit[MStarter.stxTableFields[intFld][1]]
-            Endif
-
-          Case Else
-            strComboSql = "select " & MStarter.stxTableFields[intFld][8] & ", "
-            strComboSql &= MStarter.stxTableFields[intFld][9] & " from "
-            strComboSql &= MStarter.stxTableFields[intFld][7] & " order by " & MStarter.stxTableFields[intFld][9] & " asc"
-
-            resCombo = conData.Exec(strComboSql)
-
-            cmo = New ComboBox(pnl)
-            cmo.Name = "cmo-" & MStarter.stxTableFields[intFld][1]
-            cmo.Tag = MStarter.stxTableFields[intFld][1]
-            cmo.Width = pnl.Width
-            cmo.Height = 28
-            While resCombo.Available
-              cmo.Add(resCombo[MStarter.stxTableFields[intFld][9]])
-              If resEdit.Available Then
-                If resCombo[MStarter.stxTableFields[intFld][8]] = resEdit[MStarter.stxTableFields[intFld][1]] Then
-                  cmo.Text = resCombo[MStarter.stxTableFields[intFld][9]]
-                Endif
+              If resCombo[MStarter.stxTableFields[intFld][8]] = resEdit[MStarter.stxTableFields[intFld][1]] Then
+                cmo.Text = resCombo[MStarter.stxTableFields[intFld][9]]
               Endif
-              resCombo.MoveNext
-            Wend
-        End Select
-        '--------------------------------
-      Endif
-    Next
-  Endif
-
+            Endif
+            resCombo.MoveNext
+          Wend
+      End Select
+      '--------------------------------
+    Endif
+  Next
   intState = 1
+  'Endif
 
   Return intState
 
