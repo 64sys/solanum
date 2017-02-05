@@ -23,6 +23,13 @@
 '
 
 Public strGridState As String
+Public tobCurrent As ToolButton
+Public strAction As String
+Public strPlotIdx As String
+Public strCycleIdx As String
+Public strPlantIdx As String
+
+'Public strPlant As String
 
 Public Sub Form_Open()
 
@@ -31,6 +38,7 @@ Public Sub Form_Open()
   HSplit1.Layout = [1, 5]
 
   LoadTreeView()
+  LoadVegetables()
   LoadFilterAndOrder()
 
 End
@@ -129,31 +137,39 @@ End
 
 Public Sub LoadFilterAndOrder()
 
-  nmuShowFilters.Value = MStarter.stxProgram[8]
+  mnuShowFilters.Value = MStarter.stxProgram[8]
 
   Select MStarter.stxProgram[8]
     Case "yes"
       pnlDataFilter.Visible = True
-      nmuShowFilters.Checked = True
-      nmuShowFilters.Text = ("Ocultar la barra de filtro")
+      mnuShowFilters.Checked = True
+      mnuShowFilters.Text = ("Ocultar la barra de filtro")
     Case "no"
       pnlDataFilter.Visible = False
-      nmuShowFilters.Checked = False
-      nmuShowFilters.Text = ("Mostrar la barra de filtro")
+      mnuShowFilters.Checked = False
+      mnuShowFilters.Text = ("Mostrar la barra de filtro")
   End Select
 
-  nmuShowOrders.Value = MStarter.stxProgram[9]
+  mnuShowOrders.Value = MStarter.stxProgram[9]
 
   Select MStarter.stxProgram[9]
     Case "yes"
       pnlDataOrder.Visible = True
-      nmuShowOrders.Checked = True
-      nmuShowOrders.Text = ("Ocultar la barra de orden")
+      mnuShowOrders.Checked = True
+      mnuShowOrders.Text = ("Ocultar la barra de orden")
     Case "no"
       pnlDataOrder.Visible = False
-      nmuShowOrders.Checked = False
-      nmuShowOrders.Text = ("Mostrar la barra de orden")
+      mnuShowOrders.Checked = False
+      mnuShowOrders.Text = ("Mostrar la barra de orden")
+  End Select
 
+  Select MStarter.stxProgram[7]
+    Case "yes"
+      pnlDataSquare.Visible = True
+      mnuShowSquares.Text = ("Ocultar la parcela")
+    Case "no"
+      pnlDataSquare.Visible = False
+      mnuShowSquares.Text = ("Mostrar la parcela")
   End Select
 
 End
@@ -212,6 +228,59 @@ Public Sub LoadTreeView()
 
 End
 
+' ///// Barra de vegetales //////////////////////////////////////////
+
+Public Sub LoadVegetables()
+
+  Dim strPlants As String
+  Dim resPlants As Result
+  Dim tob As ToolButton
+  Dim strVName As String
+
+  strPlants = "select * from plants"
+  resPlants = MStarter.conProgram.Exec(strPlants)
+
+  pnlVegetables.Children.Clear
+
+  tob = New ToolButton(pnlVegetables) As "tobVegetable"
+  tob.Name = "Erase"
+  tob.Tag = "Erase"
+  tob.Tooltip = ("Quitar planta")
+  tob.Width = 28
+  tob.Height = 28
+  tob.Expand = True
+  tob.Toggle = True
+  If strAction = "Erase" Then
+    tob.Value = True
+  Endif
+  tob.Picture = Picture["icon:/22/delete"]
+
+  While resPlants.Available
+    strVName = String.LCase(resPlants["plantname"])
+    strVName = MValidator.NoAcent(strVName)
+
+    tob = New ToolButton(pnlVegetables) As "tobVegetable"
+    tob.Name = resPlants["plantidx"]
+    tob.Tag = strVName
+    tob.Tooltip = resPlants["plantname"]
+    tob.Width = 28
+    tob.Height = 28
+    tob.Expand = True
+    tob.Toggle = True
+    If strAction = strVName Then
+      tob.Value = True
+    Endif
+    If Exist("pic/" & strVName & ".png") Then
+      tob.Picture = Picture["pic/" & strVName & ".png"]
+    Else
+      tob.Text = resPlants["plantidx"]
+    Endif
+
+    resPlants.MoveNext
+  Wend
+
+End
+
 ' ///// Grid //////////////////////////////////////////////////////
 
 Public Sub grwData_Data(Row As Integer, Column As Integer)
@@ -236,6 +305,7 @@ Public Sub trvEntities_Select()
   Dim strKeyText As String
   Dim intx As Integer
   Dim strSQL As String
+  '  Dim strParentKey As String
 
   strKeyText = trvEntities.Current.Key
   lblInformation.Text = trvEntities.Current.Key
@@ -255,9 +325,14 @@ Public Sub trvEntities_Select()
         MStarter.stxProgram[4] = "view_blocks"
         Print "Entidad: " & strEntity & " Clave: " & strEKey
         ' Por lo tanto tendremos una sentencia SQL y un resultado
+        strPlotIdx = strEKey
+        strCycleIdx = Split(trvEntities.Current.ParentKey, "#")[1]
+
         strSQL = "select * from view_blocks where blockplotidx='" & strEKey & "' order by blockcode"
         MStarter.stxProgram[5] = strSQL
         MStarter.resProgram = MStarter.conProgram.Exec(strSQL)
+        ' Y tambien las medidas de la parcela
+        UpdatePlot()
 
       Case "plants"
         MStarter.stxProgram[4] = strEntity
@@ -345,6 +420,108 @@ Public Function UpdateGrid() As Integer
 
   Print MStarter.stxProgram[5]
 
+  Return 1
+
+End
+
+Public Function UpdatePlot() As Integer
+
+  'Dim intFld As Integer
+  'Dim int As Integer
+  Dim IntUnit As Integer
+  Dim intLong As Integer  ' Cantidad de bloques en X
+  Dim intX As Integer ' Numero de bloque en X
+  Dim intPx As Integer ' Posición del bloque en X
+
+  Dim intWidth As Integer  ' Cantidad de bloques en Y
+  Dim intY As Integer ' Numero de bloque en Y
+  Dim intPy As Integer ' Posición del bloque en Y
+
+  Dim pnl As Panel
+  Dim tob As ToolButton
+  Dim strCode As String
+  Dim stxCode As New String[]
+  Dim intH As Integer
+  Dim intV As Integer
+  Dim intQ As Integer
+  Dim resTmp As Result
+  Dim strPic As String
+
+  resTmp = MStarter.resProgram
+
+  IntUnit = 22
+  stxCode = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
+
+  If MStarter.resProgram.Available Then
+    If MStarter.resProgram.Count > 0 Then
+
+      intLong = CInt(MStarter.resProgram["blockplotx"])
+      intWidth = CInt(MStarter.resProgram["blockploty"])
+
+      pnlDataSquare.Width = intWidth * IntUnit * 3
+      pnlDataSquare.Height = intWidth * IntUnit * 3
+      'pnlDataSquare.Arrangement = Arrange.Row
+      pnlDataSquare.ScrollBar = Scroll.Both
+
+      intPy = 0
+      pnlDataSquare.Children.Clear
+      For intY = 0 To intWidth - 1
+        intPx = 0
+        For intX = 0 To intLong - 1
+          pnl = New Panel(pnlDataSquare)
+          pnl.Name = stxCode[intX] & stxCode[intY]
+          pnl.Width = IntUnit * 3
+          pnl.Height = IntUnit * 3
+          'pnl.Background = Color.Blue
+          pnl.Border = Border.Plain
+          pnl.Arrangement = Arrange.None
+          pnl.Left = intPx
+          pnl.Top = intPy
+          intPx = intPx + (IntUnit * 3)
+          intQ = 0
+          For intV = 0 To 2
+            For intH = 0 To 2
+              tob = New ToolButton(pnl) As "block"
+              strCode = stxCode[intX] & stxCode[intY] & CStr(intQ) 'CStr(intH + intV)
+              tob.Name = strCode
+              tob.Text = CStr(intQ) 'CStr(intH + intV + intQ)
+              tob.Tag = strCode
+              tob.Expand = True
+              tob.Tooltifp = ("Escoja una planta")
+
+              resTmp.MoveFirst
+
+              While resTmp.Available
+                If resTmp["blockplotidx"] = strPlotIdx Then
+                  If resTmp["blockcycleidx"] = strCycleIdx Then
+                    If resTmp["blockcode"] = strCode Then
+                      strPic = "pic/" & String.LCase(resTmp["blockplant"]) & ".png"
+                      If Exist(strPic) Then
+                        tob.Picture = Picture[strPic]
+                        tob.Tooltip = (resTmp["blockplant"])
+                        tob.Text = ""
+                        'Break
+                      Endif
+                    Endif
+                  Endif
+                Endif
+                resTmp.MoveNext
+              Wend
+
+              tob.Width = IntUnit
+              tob.Height = IntUnit
+              tob.Left = IntUnit * intH
+              tob.Top = IntUnit * intV
+              Inc intQ
+            Next
+            'Inc intQ ' = intQ + 2
+          Next
+
+        Next
+        intPy = intPy + (IntUnit * 3)
+      Next
+    Endif
+  Endif
   Return 1
 
 End
@@ -567,9 +744,9 @@ Public Sub cmdRecordDelete()
 
 End
 
-Public Sub nmuShowOrders_Click()
+Public Sub mnuShowOrders_Click()
 
-  If nmuShowOrders.Value = False Then
+  If mnuShowOrders.Value = False Then
     MStarter.stxProgram[9] = "no"
   Else
     MStarter.stxProgram[9] = "yes"
@@ -580,18 +757,18 @@ Public Sub nmuShowOrders_Click()
   Select MStarter.stxProgram[9]
     Case "yes"
       pnlDataOrder.Visible = True
-      nmuShowOrders.Text = ("Ocultar la barra de orden")
+      mnuShowOrders.Text = ("Ocultar la barra de orden")
     Case "no"
       pnlDataOrder.Visible = False
-      nmuShowOrders.Text = ("Mostrar la barra de orden")
+      mnuShowOrders.Text = ("Mostrar la barra de orden")
 
   End Select
 
 End
 
-Public Sub nmuShowFilters_Click()
+Public Sub mnuShowFilters_Click()
 
-  If nmuShowFilters.Value = False Then
+  If mnuShowFilters.Value = False Then
     MStarter.stxProgram[8] = "no"
   Else
     MStarter.stxProgram[8] = "yes"
@@ -602,10 +779,10 @@ Public Sub nmuShowFilters_Click()
   Select MStarter.stxProgram[8]
     Case "yes"
       pnlDataFilter.Visible = True
-      nmuShowFilters.Text = ("Ocultar la barra de filtro")
+      mnuShowFilters.Text = ("Ocultar la barra de filtro")
     Case "no"
       pnlDataFilter.Visible = False
-      nmuShowFilters.Text = ("Mostrar la barra de filtro")
+      mnuShowFilters.Text = ("Mostrar la barra de filtro")
   End Select
 
 End
@@ -629,5 +806,78 @@ End
 Public Sub tobEditRecord_Click()
 
   cmdRecordEdit()
+
+End
+
+Public Sub mnuShowSquares_Click()
+
+  If mnuShowSquares.Value = False Then
+    MStarter.stxProgram[8] = "no"
+  Else
+    MStarter.stxProgram[8] = "yes"
+  Endif
+
+  Print MStarter.stxProgram[8]
+
+  Select MStarter.stxProgram[8]
+    Case "yes"
+      pnlDataSquare.Visible = True
+      mnuShowSquares.Text = ("Ocultar la parcela")
+    Case "no"
+      pnlDataSquare.Visible = False
+      mnuShowSquares.Text = ("Mostrar la parcela")
+  End Select
+
+End
+
+Public Sub block_Click()
+
+  Dim tob As ToolButton
+
+  Dim intIdx As String
+  Dim res As Result
+
+  tob = Last
+  Select strAction
+    Case ""
+      Message.Info(("Seleccione un tipo de planta por favor"))
+    Case "Erase"
+      tob.Text = String.Right(tob.Tag, 1)
+      tob.Picture = Null
+      'En este caso hay que borrar el registro de la tabla blocks
+      Print tob.Tag
+
+    Case Else
+      tob.Text = ""
+      tob.Picture = Picture["pic/" & strAction & ".png"]
+      'En este caso hay que agregar un registro en la tabla blocks.
+      res = MStarter.conProgram.Create("blocks")
+      res["blockplot"] = strPlotIdx
+      res["blockcycle"] = strCycleIdx
+      res["blockcode"] = tob.Tag
+      res["blockplant"] = strPlantIdx
+
+      res.Update
+
+      If UpdateGrid() = 1 Then
+        Print tob.Tag
+      Endif
+
+  End Select
+  tob.Expand = True
+  tob.Refresh
+
+End
+
+Public Sub tobVegetable_MouseDown()
+
+  Dim tob As ToolButton
+
+  tob = Last
+  strAction = CStr(tob.Tag)
+  strPlantIdx = tob.Name
+  'strPlant = tob.Tag
+
+  LoadVegetables()
 
 End

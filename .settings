@@ -31,27 +31,32 @@ Geometry=[18,74,413,501]
 [DebugWindow/connDB]
 Geometry=[58,74,224,280]
 
+[DebugWindow/obj]
+Geometry=[21,37,224,280]
+
 [DebugWindow/stxParam]
 Geometry=[34,119,224,280]
 
 [DebugWindow/stxValues]
 Geometry=[-10,19,224,280]
 
+[DebugWindow/tob]
+Geometry=[27,381,224,280]
+
 [Executable]
 Path="solanum.gambas"
 
 [OpenFile]
-Count=9
-Active=8
-File[1]=".src/gef/MData.module:0.150"
-File[2]=".src/std/MStarter.module:0.157"
-File[3]=".src/FMain.class:11.296"
-File[4]=".src/gef/MValidator.module:11.60"
-File[5]=".src/FPlot.form"
-File[6]=".src/gef/MUtility.module:0.0"
-File[7]=".src/gef/Msys.module:0.0"
-File[8]=".src/FMain.form"
-File[9]=".src/std/FAbout.class:0.157"
+Count=8
+Active=4
+File[1]=".src/FMain.form"
+File[2]=".src/FMain.class:0.259"
+File[3]=".src/std/MStarter.module:20.150"
+File[4]=".src/gef/MData.module:37.145"
+File[5]=".src/gef/MValidator.module:0.135"
+File[6]=".src/std/FConfig.class:28.68"
+File[7]="dbase.dia:20.1585"
+File[8]="new.sql:52.63"
 
 [Watches]
 Count=0

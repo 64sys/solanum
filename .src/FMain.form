@@ -65,16 +65,22 @@
       Text = ("Preferencias")
       Picture = Picture["icon:/16/tools"]
     }
-    { nmuShowOrders Menu
+    { mnuShowOrders Menu
       #Translate = False
       Text = "Orden"
       Picture = Picture["icon:/16/sort-ascent"]
       Toggle = True
     }
-    { nmuShowFilters Menu
+    { mnuShowFilters Menu
       #Translate = False
       Text = "Filtro"
       Picture = Picture["icon:/16/filter"]
+      Toggle = True
+    }
+    { mnuShowSquares Menu
+      #Translate = False
+      Text = "Cuadricula"
+      Picture = Picture["icon:/16/grid"]
       Toggle = True
     }
   }
@@ -197,7 +203,7 @@
         }
       }
       { pnlDataControls Panel
-        MoveScaled(0,26,41,4)
+        MoveScaled(2,28,41,4)
         Background = Color.TextBackground
         Arrangement = Arrange.Horizontal
         { tobNewRecord ToolButton
@@ -221,14 +227,19 @@
           Picture = Picture["icon:/16/edit"]
         }
       }
-      { pnlDataSpecial ScrollView
-        MoveScaled(0,37,41,4)
+      { pnlDataSquare ScrollView
+        MoveScaled(0,34,41,4)
         Visible = False
         Background = Color.TextBackground
-        Arrangement = Arrange.Horizontal
+        Expand = True
         Padding = 1
         Border = False
         ScrollBar = Scroll.None
+      }
+      { pnlVegetables Panel
+        MoveScaled(1,40,41,4)
+        Background = Color.TextBackground
+        Arrangement = Arrange.Horizontal
       }
     }
   }

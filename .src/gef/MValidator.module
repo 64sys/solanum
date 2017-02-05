@@ -121,6 +121,39 @@ Public Function OnlyCyrilic(strInput As String) As String '' Validación de pala
 
 End
 
+Public Function NoAcent(strInput As String) As String '' Validación de solo texto sin acentos
+
+  Dim int As Integer
+  Dim stx1 As New String[]
+  Dim stx2 As New String[]
+  Dim str1 As String
+  Dim str2 As String
+  Dim intKey As Integer
+  Dim strOutput As String
+
+  stx1.Clear
+  stx2.Clear
+
+  stx1 = Split("Á:À:Â:Ã:É:È:Í:Ï:Ó:Ô:Õ:Ö:Ú:Ç:Ñ:á:à:â:ã:é:è:ê:í:ï:ó:ô:õ:ö:ú:ç:ñ", ":")
+  stx2 = Split("A:A:A:A:E:E:I:I:O:O:O:O:U:C:N:a:a:a:a:e:e:e:i:i:o:o:o:o:u:c:n", ":")
+
+  strOutput = ""
+
+  For int = 1 To String.Len(strInput)
+    str1 = String.Mid(strInput, int, 1)
+    intKey = stx1.Find(str1)
+    If intKey > -1 Then
+      str2 = stx2[intKey]
+      strOutput &= str2
+    Else
+      strOutput &= str1
+    Endif
+  Next
+
+  Return strOutput
+
+End
+
 Public Function OnlyText(strInput As String) As String '' Validación de solo texto, Numeros NO, Doble espacio NO, Espacio Al principio y/o al final NO.
 
   Dim int As Integer

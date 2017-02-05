@@ -85,7 +85,7 @@ Public Sub Main()
   stxProgram[4] = Settings["Program/Plot-Current", ""]
   stxProgram[5] = Settings["Program/SQL-Current", ""]
   stxProgram[6] = ""
-  stxProgram[7] = ""
+  stxProgram[7] = Settings["Program/Show-Square-Bar", "yes"]
   stxProgram[8] = Settings["Program/Show-Filter-Bar", "no"]
   stxProgram[9] = Settings["Program/Show-Order-Bar", "no"]
 
@@ -147,11 +147,11 @@ Public Sub Main()
   ' Apertura del formulario principal
   If conProgram.Opened Then
     If MData.Rcount(conProgram, "plots") Then
-      If MData.Rcount(conProgram, "view_blocks") Then
+      If MData.Rcount(conProgram, "cycles") Then
         FMain.Show()
       Else
         Message.Info(("Debe verificar las parcelas"))
-        FData.RunEditor(conProgram, "blocks")
+        'FData.RunEditor(conProgram, "blocks")
       Endif
     Else
       Message.Info(("Debe crear una parcela antes de comenzar"))
@@ -227,7 +227,7 @@ Public Function Terminator() As Integer ''Funcion que guarda las configuraciones
   Settings["Program/Plot-Current"] = stxProgram[4]
   Settings["Program/SQL-Current"] = stxProgram[5]
   Settings["Program/Spare6"] = stxProgram[6]
-  Settings["Program/Spare7"] = stxProgram[7]
+  Settings["Program/Show-Square-Bar"] = stxProgram[7]
   Settings["Program/Show-Filter-Bar"] = stxProgram[8]
   Settings["Program/Show-Order-Bar"] = stxProgram[9]
 
@@ -250,6 +250,8 @@ Private Function LoadTitles() '' La carga de títulos de esta manera permite lue
   stxTitles.Add(["view_blocks", "blockidx", ("Índice")])
   stxTitles.Add(["view_blocks", "blockplotidx", ("id")])
   stxTitles.Add(["view_blocks", "blockplot", ("Parcela")])
+  stxTitles.Add(["view_blocks", "blockplotx", ("Largo")])
+  stxTitles.Add(["view_blocks", "blockploty", ("Ancho")])
   stxTitles.Add(["view_blocks", "blockcycleidx", ("id")])
   stxTitles.Add(["view_blocks", "blockcycle", ("Ciclo")])
   stxTitles.Add(["view_blocks", "blockplotcycle", ("Cultivo")])
