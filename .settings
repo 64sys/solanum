@@ -1,3 +1,6 @@
+[Bookmarks]
+FMain=[]
+
 [Breakpoints]
 Count=0
 
@@ -8,19 +11,22 @@ Count=0
 Geometry=[-10,19,224,280]
 
 [DebugWindow/MStarter.stxFieldsViewCurrent]
-Geometry=[-10,19,224,280]
+Geometry=[-10,99,224,280]
 
 [DebugWindow/MStarter.stxTableFields[intFld]]
 Geometry=[918,440,224,481]
 
 [DebugWindow/MStarter.stxViewFields]
-Geometry=[-10,19,224,280]
+Geometry=[-10,19,224,486]
 
 [DebugWindow/MStarter.stxViewFields[intY]]
-Geometry=[-10,19,224,280]
+Geometry=[15,154,224,280]
 
 [DebugWindow/MStarter.stxViewFields[int]]
 Geometry=[1071,381,235,378]
+
+[DebugWindow/Picture[strPic]]
+Geometry=[-10,18,224,280]
 
 [DebugWindow/Split(strTables, "\n")]
 Geometry=[-10,19,723,280]
@@ -33,6 +39,9 @@ Geometry=[58,74,224,280]
 
 [DebugWindow/obj]
 Geometry=[21,37,224,280]
+
+[DebugWindow/resChk]
+Geometry=[0,28,224,280]
 
 [DebugWindow/stxParam]
 Geometry=[34,119,224,280]
@@ -47,16 +56,18 @@ Geometry=[27,381,224,280]
 Path="solanum.gambas"
 
 [OpenFile]
-Count=8
-Active=4
+Count=10
+Active=3
 File[1]=".src/FMain.form"
-File[2]=".src/FMain.class:0.259"
-File[3]=".src/std/MStarter.module:20.150"
-File[4]=".src/gef/MData.module:37.145"
+File[2]=".src/FMain.class:2.945"
+File[3]=".src/std/MStarter.module:46.265"
+File[4]=".src/gef/MData.module:21.127"
 File[5]=".src/gef/MValidator.module:0.135"
 File[6]=".src/std/FConfig.class:28.68"
 File[7]="dbase.dia:20.1585"
 File[8]="new.sql:52.63"
+File[9]=".src/gef/MUtility.module:0.0"
+File[10]=".src/gef/Msys.module:0.0"
 
 [Watches]
 Count=0

@@ -305,10 +305,10 @@ Public Sub trvEntities_Select()
   Dim strKeyText As String
   Dim intx As Integer
   Dim strSQL As String
-  '  Dim strParentKey As String
 
   strKeyText = trvEntities.Current.Key
   lblInformation.Text = trvEntities.Current.Key
+  strGridState = "loading"
 
   If InStr(trvEntities.Current.Key, "#") Then
     strEntity = Split(trvEntities.Current.Key, "#")[0]
@@ -328,10 +328,11 @@ Public Sub trvEntities_Select()
         strPlotIdx = strEKey
         strCycleIdx = Split(trvEntities.Current.ParentKey, "#")[1]
 
-        strSQL = "select * from view_blocks where blockplotidx='" & strEKey & "' order by blockcode"
+        strSQL = "select * from view_blocks where blockplotidx='" & strPlotIdx & "' and blockcycleidx='" & strCycleIdx & "' order by blockcode"
         MStarter.stxProgram[5] = strSQL
         MStarter.resProgram = MStarter.conProgram.Exec(strSQL)
         ' Y tambien las medidas de la parcela
+        UpdateGrid()
         UpdatePlot()
 
       Case "plants"
@@ -406,8 +407,8 @@ Public Function UpdateGrid() As Integer
         Case ""
           MStarter.stxViewFields[int][6] = 75
       End Select
-      grwData.Columns[intFld].Width = MStarter.stxViewFields[int][6]
       strGridState = "loading"
+      grwData.Columns[intFld].Width = MStarter.stxViewFields[int][6]
       Inc intFld
 
     Endif
@@ -448,6 +449,7 @@ Public Function UpdatePlot() As Integer
   Dim strPic As String
 
   resTmp = MStarter.resProgram
+  'strPic = "pic/" & "suelo1.png"
 
   IntUnit = 22
   stxCode = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
@@ -484,10 +486,11 @@ Public Function UpdatePlot() As Integer
               tob = New ToolButton(pnl) As "block"
               strCode = stxCode[intX] & stxCode[intY] & CStr(intQ) 'CStr(intH + intV)
               tob.Name = strCode
-              tob.Text = CStr(intQ) 'CStr(intH + intV + intQ)
+              tob.Text = "" 'CStr(intQ) 'CStr(intH + intV + intQ)
               tob.Tag = strCode
               tob.Expand = True
-              tob.Tooltifp = ("Escoja una planta")
+              tob.Tooltip = ("Suelo")
+              tob.Picture = Picture["pic/" & "suelo1.png"]
 
               resTmp.MoveFirst
 
@@ -495,7 +498,12 @@ Public Function UpdatePlot() As Integer
                 If resTmp["blockplotidx"] = strPlotIdx Then
                   If resTmp["blockcycleidx"] = strCycleIdx Then
                     If resTmp["blockcode"] = strCode Then
+                      'Select resTmp["blockplant"]
+                      '  Case ""
+                      '    strPic = "pic/" & "suelo1.png"
+                      '  Case Else
                       strPic = "pic/" & String.LCase(resTmp["blockplant"]) & ".png"
+                      'End Select
                       If Exist(strPic) Then
                         tob.Picture = Picture[strPic]
                         tob.Tooltip = (resTmp["blockplant"])
@@ -530,27 +538,30 @@ Public Sub grwData_ColumnResize(Column As Integer)
 
   Dim intY As Integer
 
-  Select MStarter.stxViews.Find(MStarter.stxProgram[4])
-    Case -1
-      Message.Info(("La vista que intenta guardar no esta configurada adecuadamente.") & gb.NewLine & ("Contacte al desarrollador del programa para reportar el error."))
-    Case Else
-      For intY = 0 To MStarter.stxViewFields.Max
-        If MStarter.stxViewFields[intY][0] = MStarter.stxProgram[4] Then
-          If MStarter.stxViewFields[intY][1] = MStarter.stxFieldsViewCurrent[Column] Then
-            MStarter.stxViewFields[intY][6] = CStr(grwData.Columns[Column].Width)
+  If strGridState = "loaded" Then
+
+    Select MStarter.stxViews.Find(MStarter.stxProgram[4])
+      Case -1
+        Message.Info(("La vista que intenta guardar no esta configurada adecuadamente.") & gb.NewLine & ("Contacte al desarrollador del programa para reportar el error."))
+      Case Else
+        For intY = 0 To MStarter.stxViewFields.Max
+          If MStarter.stxViewFields[intY][0] = MStarter.stxProgram[4] Then
+            If MStarter.stxViewFields[intY][1] = MStarter.stxFieldsViewCurrent[Column] Then
+              MStarter.stxViewFields[intY][6] = CStr(grwData.Columns[Column].Width)
+            Endif
           Endif
+
+        Next
+
+        Wait 0.01
+
+        If strGridState = "loaded" Then
+          cmdArrangeButtonOrders(MStarter.stxFieldsViewCurrent)
+          cmdArrangeButtonFilters()
         Endif
 
-      Next
-
-      Wait 0.01
-
-      If strGridState = "loaded" Then
-        cmdArrangeButtonOrders(MStarter.stxFieldsViewCurrent)
-        cmdArrangeButtonFilters()
-      Endif
-
-  End Select
+    End Select
+  Endif
 
 End
 
@@ -830,42 +841,90 @@ Public Sub mnuShowSquares_Click()
 
 End
 
-Public Sub block_Click()
+Public Sub block_MouseDown()
 
   Dim tob As ToolButton
-
-  Dim intIdx As String
-  Dim res As Result
+  Dim resAdd As Result
+  Dim resChk As Result
+  Dim intKey As Integer
+  Dim resDelete As Result
+  Dim strChk As String
+  Dim resEdit As Result
 
   tob = Last
-  Select strAction
-    Case ""
-      Message.Info(("Seleccione un tipo de planta por favor"))
-    Case "Erase"
-      tob.Text = String.Right(tob.Tag, 1)
-      tob.Picture = Null
-      'En este caso hay que borrar el registro de la tabla blocks
-      Print tob.Tag
+  strChk = "select * from view_blocks "
+  strChk &= " where blockplotidx = '" & strPlotIdx & "' and blockcycleidx='" & strCycleIdx & "' and blockcode='" & tob.Tag & "'"
+  resChk = MStarter.conProgram.Exec(strChk)
 
-    Case Else
-      tob.Text = ""
-      tob.Picture = Picture["pic/" & strAction & ".png"]
-      'En este caso hay que agregar un registro en la tabla blocks.
-      res = MStarter.conProgram.Create("blocks")
-      res["blockplot"] = strPlotIdx
-      res["blockcycle"] = strCycleIdx
-      res["blockcode"] = tob.Tag
-      res["blockplant"] = strPlantIdx
+  If resChk.Available Then
+    If resChk.Count = 1 Then
+      intKey = CInt(resChk["blockidx"])
+    Else
+      intKey = 0
+    Endif
+  Else
+    intKey = 0
+  Endif
 
-      res.Update
+  Select Mouse.Button
 
-      If UpdateGrid() = 1 Then
-        Print tob.Tag
-      Endif
+    Case 1 ' Boton izquierdo
+
+      Select strAction
+        Case ""  '///////////////////////////////////////////////////////////////
+          Message.Info(("Seleccione un tipo de planta por favor"))
+        Case "Erase" '///////////////////////////////////////////////////////////
+          tob.Text = ""
+          tob.Picture = Picture["pic/suelo1.png"]
+          tob.Tooltip = ("Suelo")
+          'En este caso hay que borrar el registro de la tabla blocks
+          Print tob.Tag
+
+          If intKey > 0 Then
+            MStarter.conProgram.Delete("blocks", "blockidx=&1", intKey)
+          Endif
+
+        Case Else
+
+          If Exist("pic/" & strAction & ".png") Then
+            tob.Text = ""
+            tob.Picture = Picture["pic/" & strAction & ".png"]
+          Else
+            tob.Text = strPlantIdx
+            tob.Picture = Null
+          Endif
+
+          tob.Tooltip = strAction
+
+          Select intKey
+            Case 0 'En este caso hay que agregar un registro en la tabla blocks ya que no existe.
+
+              resAdd = MStarter.conProgram.Create("blocks")
+              resAdd["blockplot"] = strPlotIdx
+              resAdd["blockcycle"] = strCycleIdx
+              resAdd["blockcode"] = tob.Tag
+              resAdd["blockplant"] = strPlantIdx
+              resAdd.Update
+            Case Else 'En este caso hay que EDITAR un registro existente de la tabla blocks.
+              resEdit = MStarter.conProgram.Edit("blocks", "blockidx=&1", intKey)
+              resEdit["blockplant"] = strPlantIdx
+              resEdit.Update
+
+          End Select
+
+          If UpdateGrid() = 1 Then
+            Print tob.Tag
+          Endif
+
+      End Select
+      tob.Expand = True
+      tob.Refresh
+
+    Case 2 ' Boton derecho, información de la planta
+
+      Print Tob.Tag
 
   End Select
-  tob.Expand = True
-  tob.Refresh
 
 End
 
@@ -879,5 +938,9 @@ Public Sub tobVegetable_MouseDown()
   'strPlant = tob.Tag
 
   LoadVegetables()
+
+End
+
+Public Sub tobReportPlants_Click()
 
 End

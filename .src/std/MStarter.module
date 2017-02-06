@@ -148,10 +148,16 @@ Public Sub Main()
   If conProgram.Opened Then
     If MData.Rcount(conProgram, "plots") Then
       If MData.Rcount(conProgram, "cycles") Then
-        FMain.Show()
+        If MData.Rcount(conProgram, "view_blocks") Then
+          FMain.Show()
+        Else
+          FData.RunEditor(conProgram, "blocks")
+          FMain.Show()
+        Endif
+
       Else
         Message.Info(("Debe verificar las parcelas"))
-        'FData.RunEditor(conProgram, "blocks")
+        FData.RunEditor(conProgram, "blocks")
       Endif
     Else
       Message.Info(("Debe crear una parcela antes de comenzar"))
